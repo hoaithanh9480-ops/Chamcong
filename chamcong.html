@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chấm Công</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-dark: #45a049;
+            --secondary-color: #2196F3;
+            --text-color: #333;
+            --light-gray: #f5f5f5;
+            --border-color: #ddd;
+            --white: #fff;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--white);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .navigation {
+            margin-bottom: 15px;
+        }
+        
+        .nav-button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .filter-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .week-info {
+            background-color: #f0f8ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        select, input, button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        
+        .editable {
+            background-color: var(--white);
+            width: 100%;
+            border: 1px solid transparent;
+            padding: 4px;
+        }
+        
+        .editable:focus {
+            background-color: #f9f9f9;
+            outline: 2px solid var(--primary-color);
+            border-radius: 2px;
+        }
+        
+        .day-header {
+            text-align: center;
+            font-weight: bold;
+            background-color: #f2f2f2;
+            padding: 5px;
+            font-size: 0.8rem;
+        }
+        
+        .week-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .mobile-controls {
+            display: none;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .mobile-controls button {
+            flex: 1;
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-section select, 
+            .filter-section button {
+                width: 100%;
+            }
+            
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .desktop-controls {
+                display: none;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+                font-size: 0.8rem;
+            }
+            
+            .week-days {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .week-days .day-header:nth-child(n+5) {
+                display: none;
+            }
+            
+            .table-container {
+                font-size: 0.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            th, td {
+                padding: 4px 2px;
+                font-size: 0.75rem;
+            }
+            
+            .week-days {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .week-days .day-header:nth-child(n+3) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chấm Công</h1>
+            <div id="user-info" class="user-info hidden">
+                <span id="user-email"></span>
+                <button id="logout-btn">Đăng xuất</button>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <a href="index.html" class="nav-button">← Quay lại Dashboard</a>
+        </div>
+
+        <div id="app-content" class="hidden">
+            <div class="filter-section">
+                <select id="year-select">
+                    <option value="">Chọn năm</option>
+                </select>
+                <select id="month-select">
+                    <option value="">Chọn tháng</option>
+                </select>
+                <select id="week-select">
+                    <option value="">Chọn tuần</option>
+                </select>
+                <div class="mobile-controls">
+                    <button id="mobile-add-employee-btn">Thêm NV</button>
+                    <button id="mobile-save-btn">Lưu</button>
+                </div>
+                <div class="desktop-controls">
+                    <button id="add-employee-btn">Thêm nhân viên</button>
+                    <button id="save-btn">Lưu thay đổi</button>
+                </div>
+            </div>
+
+            <div id="week-info" class="week-info"></div>
+
+            <div id="week-days" class="week-days"></div>
+
+            <div class="table-container">
+                <table id="timesheet-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Họ tên</th>
+                            <th>Tên đội</th>
+                            <th>Lương ngày</th>
+                            <!-- Các ngày trong tuần sẽ được thêm động ở đây -->
+                            <th>Tổng công</th>
+                            <th>Tổng lương</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timesheet-body">
+                        <!-- Dữ liệu sẽ được thêm động ở đây -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Khởi tạo Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTOD66P7I9d9Nc-SeRySoCskl5EEquR-w",
+            authDomain: "chamcong-9385e.firebaseapp.com",
+            databaseURL: "https://chamcong-9385e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chamcong-9385e",
+            storageBucket: "chamcong-9385e.firebasestorage.app",
+            messagingSenderId: "416187735141",
+            appId: "1:416187735141:web:e0a6010118ae5ce5b47a8c"
+        };
+
+        // Khởi tạo Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Biến toàn cục
+        let currentUser = null;
+        let currentData = {};
+        let currentWeekDays = [];
+
+        // DOM Elements
+        const appContent = document.getElementById('app-content');
+        const userInfo = document.getElementById('user-info');
+        const userEmail = document.getElementById('user-email');
+        const logoutBtn = document.getElementById('logout-btn');
+        const yearSelect = document.getElementById('year-select');
+        const monthSelect = document.getElementById('month-select');
+        const weekSelect = document.getElementById('week-select');
+        const addEmployeeBtn = document.getElementById('add-employee-btn');
+        const mobileAddEmployeeBtn = document.getElementById('mobile-add-employee-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const mobileSaveBtn = document.getElementById('mobile-save-btn');
+        const timesheetBody = document.getElementById('timesheet-body');
+        const weekDaysContainer = document.getElementById('week-days');
+        const weekInfo = document.getElementById('week-info');
+
+        // Khởi tạo các combobox
+        function initializeSelects() {
+            // Năm (từ 2020 đến năm hiện tại + 1)
+            const currentYear = new Date().getFullYear();
+            for (let year = 2020; year <= currentYear + 1; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            // Tháng
+            for (let month = 1; month <= 12; month++) {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = `Tháng ${month}`;
+                monthSelect.appendChild(option);
+            }
+            
+            // Tuần (1 tháng có 4 tuần)
+            for (let week = 1; week <= 4; week++) {
+                const option = document.createElement('option');
+                option.value = week;
+                option.textContent = `Tuần ${week}`;
+                weekSelect.appendChild(option);
+            }
+            
+            // Đặt giá trị mặc định là tháng và năm hiện tại
+            const currentMonth = new Date().getMonth() + 1;
+            yearSelect.value = currentYear;
+            monthSelect.value = currentMonth;
+            
+            // Tính toán tuần hiện tại
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const firstSunday = new Date(firstDayOfMonth);
+            firstSunday.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay());
+            
+            const diffInDays = Math.floor((today - firstSunday) / (1000 * 60 * 60 * 24));
+            const currentWeek = Math.floor(diffInDays / 7) + 1;
+            
+            // Đảm bảo tuần không vượt quá 4
+            weekSelect.value = Math.min(currentWeek, 4);
+            
+            // Cập nhật ngày trong tuần
+            updateWeekDays();
+        }
+
+        // Cập nhật các ngày trong tuần dựa trên năm, tháng và tuần đã chọn
+        function updateWeekDays() {
+            const year = parseInt(yearSelect.value);
+            const month = parseInt(monthSelect.value);
+            const week = parseInt(weekSelect.value);
+            
+            if (!year || !month || !week) return;
+            
+            // Xóa các ngày hiện tại
+            weekDaysContainer.innerHTML = '';
+            currentWeekDays = [];
+            
+            // Tính ngày Chủ Nhật đầu tiên của tháng
+            const firstDayOfMonth = new Date(year, month - 1, 1);
+            const firstSunday = new Date(firstDayOfMonth);
+            firstSunday.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay());
+            
+            // Tính ngày bắt đầu của tuần đã chọn
+            const startDate = new Date(firstSunday);
+            startDate.setDate(firstSunday.getDate() + (week - 1) * 7);
+            
+            // Tính ngày kết thúc của tuần
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            
+            // Cập nhật thông tin tuần
+            const startDay = startDate.getDate();
+            const startMonth = startDate.getMonth() + 1;
+            const endDay = endDate.getDate();
+            const endMonth = endDate.getMonth() + 1;
+            
+            weekInfo.textContent = `Tuần ${week}: Từ ${startDay}/${startMonth} đến ${endDay}/${endMonth}`;
+            
+            // Thêm các ngày trong tuần (từ Chủ Nhật đến Thứ Bảy)
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(startDate);
+                day.setDate(startDate.getDate() + i);
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day-header';
+                
+                // Đặt tên các ngày trong tuần
+                const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+                dayElement.textContent = `${dayNames[i]} ${day.getDate()}/${month}`;
+                weekDaysContainer.appendChild(dayElement);
+                
+                currentWeekDays.push({
+                    date: day.getDate(),
+                    month: month,
+                    year: year,
+                    dayName: dayNames[i],
+                    fullDate: `${day.getDate()}/${month}/${year}`
+                });
+            }
+            
+            // Cập nhật bảng chấm công
+            updateTimesheetTable();
+        }
+
+        // Cập nhật bảng chấm công
+        function updateTimesheetTable() {
+            // Xóa nội dung cũ
+            timesheetBody.innerHTML = '';
+            
+            // Thêm tiêu đề cho các cột ngày
+            const headerRow = document.querySelector('#timesheet-table thead tr');
+            
+            // Xóa các cột ngày cũ (nếu có)
+            const existingDayHeaders = headerRow.querySelectorAll('.day-header');
+            existingDayHeaders.forEach(header => header.remove());
+            
+            // Thêm các cột ngày mới
+            currentWeekDays.forEach(day => {
+                const th = document.createElement('th');
+                th.className = 'day-header';
+                th.textContent = `${day.dayName} ${day.date}/${day.month}`;
+                headerRow.insertBefore(th, headerRow.querySelector('th:nth-child(5)'));
+            });
+            
+            // Thêm dữ liệu nhân viên
+            if (currentData.employees) {
+                Object.keys(currentData.employees).forEach((employeeId, index) => {
+                    const employee = currentData.employees[employeeId];
+                    addEmployeeRow(employee, employeeId, index + 1);
+                });
+            }
+            
+            // Tính toán tổng công và tổng lương
+            calculateTotals();
+        }
+
+        // Thêm hàng nhân viên vào bảng
+        function addEmployeeRow(employee, employeeId, stt) {
+            const row = document.createElement('tr');
+            row.dataset.employeeId = employeeId;
+            
+            // STT
+            const sttCell = document.createElement('td');
+            sttCell.textContent = stt;
+            row.appendChild(sttCell);
+            
+            // Họ tên
+            const nameCell = document.createElement('td');
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'editable';
+            nameInput.value = employee.name || '';
+            nameInput.addEventListener('change', () => {
+                updateEmployeeData(employeeId, 'name', nameInput.value);
+            });
+            nameCell.appendChild(nameInput);
+            row.appendChild(nameCell);
+            
+            // Tên đội
+            const teamCell = document.createElement('td');
+            const teamInput = document.createElement('input');
+            teamInput.type = 'text';
+            teamInput.className = 'editable';
+            teamInput.value = employee.team || '';
+            teamInput.addEventListener('change', () => {
+                updateEmployeeData(employeeId, 'team', teamInput.value);
+            });
+            teamCell.appendChild(teamInput);
+            row.appendChild(teamCell);
+            
+            // Lương ngày
+            const salaryCell = document.createElement('td');
+            const salaryInput = document.createElement('input');
+            salaryInput.type = 'number';
+            salaryInput.className = 'editable';
+            salaryInput.value = employee.dailySalary || 0;
+            salaryInput.addEventListener('change', () => {
+                updateEmployeeData(employeeId, 'dailySalary', parseFloat(salaryInput.value));
+                calculateTotals();
+            });
+            salaryCell.appendChild(salaryInput);
+            row.appendChild(salaryCell);
+            
+            // Các ngày trong tuần
+            currentWeekDays.forEach(day => {
+                const dayCell = document.createElement('td');
+                const dayInput = document.createElement('input');
+                dayInput.type = 'number';
+                dayInput.className = 'editable day-work';
+                dayInput.min = 0;
+                dayInput.max = 1;
+                dayInput.step = 0.5;
+                dayInput.value = employee.workDays && employee.workDays[day.fullDate] || 0;
+                dayInput.dataset.date = day.fullDate;
+                dayInput.addEventListener('change', () => {
+                    updateEmployeeWorkDay(employeeId, day.fullDate, parseFloat(dayInput.value));
+                    calculateTotals();
+                });
+                dayCell.appendChild(dayInput);
+                row.appendChild(dayCell);
+            });
+            
+            // Tổng công
+            const totalWorkCell = document.createElement('td');
+            totalWorkCell.className = 'total-work';
+            totalWorkCell.textContent = '0';
+            row.appendChild(totalWorkCell);
+            
+            // Tổng lương
+            const totalSalaryCell = document.createElement('td');
+            totalSalaryCell.className = 'total-salary';
+            totalSalaryCell.textContent = '0';
+            row.appendChild(totalSalaryCell);
+            
+            // Thao tác
+            const actionCell = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Xóa';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Bạn có chắc chắn muốn xóa nhân viên này?')) {
+                    deleteEmployee(employeeId);
+                }
+            });
+            actionCell.appendChild(deleteBtn);
+            row.appendChild(actionCell);
+            
+            timesheetBody.appendChild(row);
+        }
+
+        // Cập nhật dữ liệu nhân viên
+        function updateEmployeeData(employeeId, field, value) {
+            if (!currentData.employees) {
+                currentData.employees = {};
+            }
+            
+            if (!currentData.employees[employeeId]) {
+                currentData.employees[employeeId] = {};
+            }
+            
+            currentData.employees[employeeId][field] = value;
+        }
+
+        // Cập nhật ngày làm việc của nhân viên
+        function updateEmployeeWorkDay(employeeId, date, value) {
+            if (!currentData.employees) {
+                currentData.employees = {};
+            }
+            
+            if (!currentData.employees[employeeId]) {
+                currentData.employees[employeeId] = {};
+            }
+            
+            if (!currentData.employees[employeeId].workDays) {
+                currentData.employees[employeeId].workDays = {};
+            }
+            
+            currentData.employees[employeeId].workDays[date] = value;
+        }
+
+        // Tính toán tổng công và tổng lương
+        function calculateTotals() {
+            const rows = timesheetBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                const employeeId = row.dataset.employeeId;
+                const dailySalary = parseFloat(currentData.employees[employeeId]?.dailySalary) || 0;
+                const dayInputs = row.querySelectorAll('.day-work');
+                
+                let totalWork = 0;
+                dayInputs.forEach(input => {
+                    totalWork += parseFloat(input.value) || 0;
+                });
+                
+                const totalSalary = totalWork * dailySalary;
+                
+                row.querySelector('.total-work').textContent = totalWork.toFixed(1);
+                row.querySelector('.total-salary').textContent = totalSalary.toFixed(0);
+            });
+        }
+
+        // Thêm nhân viên mới
+        function addNewEmployee() {
+            if (!currentData.employees) {
+                currentData.employees = {};
+            }
+            
+            const employeeId = 'emp_' + Date.now();
+            currentData.employees[employeeId] = {
+                name: 'Nhân viên mới',
+                team: '',
+                dailySalary: 0,
+                workDays: {}
+            };
+            
+            updateTimesheetTable();
+        }
+
+        // Xóa nhân viên
+        function deleteEmployee(employeeId) {
+            delete currentData.employees[employeeId];
+            updateTimesheetTable();
+        }
+
+        // Lưu dữ liệu lên Firebase
+        function saveData() {
+            if (!currentUser) return;
+            
+            const year = yearSelect.value;
+            const month = monthSelect.value;
+            const week = weekSelect.value;
+            
+            if (!year || !month || !week) {
+                alert('Vui lòng chọn năm, tháng và tuần');
+                return;
+            }
+            
+            const userDataRef = database.ref(`users/${currentUser.uid}/timesheets/${year}/${month}/${week}`);
+            userDataRef.set(currentData)
+                .then(() => {
+                    alert('Dữ liệu đã được lưu thành công!');
+                })
+                .catch(error => {
+                    console.error('Lỗi khi lưu dữ liệu:', error);
+                    alert('Có lỗi xảy ra khi lưu dữ liệu');
+                });
+        }
+
+        // Tải dữ liệu từ Firebase
+        function loadData() {
+            if (!currentUser) return;
+            
+            const year = yearSelect.value;
+            const month = monthSelect.value;
+            const week = weekSelect.value;
+            
+            if (!year || !month || !week) return;
+            
+            const userDataRef = database.ref(`users/${currentUser.uid}/timesheets/${year}/${month}/${week}`);
+            userDataRef.once('value')
+                .then(snapshot => {
+                    currentData = snapshot.val() || {};
+                    updateTimesheetTable();
+                })
+                .catch(error => {
+                    console.error('Lỗi khi tải dữ liệu:', error);
+                });
+        }
+
+        // Đăng xuất
+        function handleLogout() {
+            auth.signOut()
+                .then(() => {
+                    currentUser = null;
+                    updateUI();
+                })
+                .catch((error) => {
+                    console.error('Lỗi khi đăng xuất:', error);
+                });
+        }
+
+        // Cập nhật giao diện dựa trên trạng thái đăng nhập
+        function updateUI() {
+            if (currentUser) {
+                appContent.classList.remove('hidden');
+                userInfo.classList.remove('hidden');
+                userEmail.textContent = currentUser.email;
+                
+                // Khởi tạo các combobox nếu chưa được khởi tạo
+                if (yearSelect.children.length <= 1) {
+                    initializeSelects();
+                }
+                
+                // Tải dữ liệu
+                loadData();
+            } else {
+                appContent.classList.add('hidden');
+                userInfo.classList.add('hidden');
+                // Chuyển hướng về trang đăng nhập nếu chưa đăng nhập
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Lắng nghe sự kiện
+        logoutBtn.addEventListener('click', handleLogout);
+        yearSelect.addEventListener('change', updateWeekDays);
+        monthSelect.addEventListener('change', updateWeekDays);
+        weekSelect.addEventListener('change', updateWeekDays);
+        addEmployeeBtn.addEventListener('click', addNewEmployee);
+        mobileAddEmployeeBtn.addEventListener('click', addNewEmployee);
+        saveBtn.addEventListener('click', saveData);
+        mobileSaveBtn.addEventListener('click', saveData);
+
+        // Lắng nghe trạng thái xác thực
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            updateUI();
+        });
+
+        // Khởi tạo ứng dụng
+        updateUI();
+    </script>
+</body>
+</html>
