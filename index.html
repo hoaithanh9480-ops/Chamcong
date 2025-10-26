@@ -76,25 +76,32 @@
             text-align: center;
             margin-top: 20px;
         }
+
+        .success {
+            color: green;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>Đăng nhập</h1>
+        <h1>Đăng nhập - Chấm Công</h1>
         <form id="login-form">
             <div class="form-group">
                 <label for="email">Email:</label>
-                <input type="email" id="email" required>
+                <input type="email" id="email" required placeholder="Nhập email của bạn">
             </div>
             <div class="form-group">
                 <label for="password">Mật khẩu:</label>
-                <input type="password" id="password" required>
+                <input type="password" id="password" required placeholder="Nhập mật khẩu">
             </div>
             <button type="submit">Đăng nhập</button>
+            <div id="success-message" class="success"></div>
             <div id="error-message" class="error"></div>
         </form>
         <div class="register-link">
-            <p>Chưa có tài khoản? <a href="register.html">Đăng ký tại đây</a></p>
+            <p>Chưa có tài khoản? <a href="#" id="register-link">Đăng ký tại đây</a></p>
         </div>
     </div>
 
@@ -111,7 +118,13 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+        }
+
         const auth = firebase.auth();
 
         // Xử lý đăng nhập
@@ -121,27 +134,94 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            // Clear messages
+            errorMessage.textContent = '';
+            successMessage.textContent = '';
+            
+            console.log("Attempting login with:", email);
             
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
                     // Đăng nhập thành công
-                    console.log("Đăng nhập thành công");
-                    window.location.href = 'timesheet.html';
+                    console.log("Đăng nhập thành công:", userCredential.user.email);
+                    successMessage.textContent = 'Đăng nhập thành công! Đang chuyển hướng...';
+                    
+                    // Chuyển hướng sau 1 giây
+                    setTimeout(() => {
+                        window.location.href = 'chamcong.html';
+                    }, 1000);
                 })
                 .catch((error) => {
                     // Xử lý lỗi
                     console.error("Lỗi đăng nhập:", error);
-                    errorMessage.textContent = error.message;
+                    let errorText = '';
+                    
+                    switch (error.code) {
+                        case 'auth/invalid-email':
+                            errorText = 'Email không hợp lệ';
+                            break;
+                        case 'auth/user-disabled':
+                            errorText = 'Tài khoản đã bị vô hiệu hóa';
+                            break;
+                        case 'auth/user-not-found':
+                            errorText = 'Không tìm thấy tài khoản với email này';
+                            break;
+                        case 'auth/wrong-password':
+                            errorText = 'Mật khẩu không đúng';
+                            break;
+                        case 'auth/too-many-requests':
+                            errorText = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau.';
+                            break;
+                        default:
+                            errorText = 'Lỗi đăng nhập: ' + error.message;
+                    }
+                    
+                    errorMessage.textContent = errorText;
                 });
+        });
+
+        // Xử lý đăng ký tài khoản mới
+        document.getElementById('register-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            const email = prompt("Nhập email để đăng ký:");
+            const password = prompt("Nhập mật khẩu (ít nhất 6 ký tự):");
+            
+            if (email && password) {
+                if (password.length < 6) {
+                    alert("Mật khẩu phải có ít nhất 6 ký tự");
+                    return;
+                }
+                
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        alert("Đăng ký thành công! Vui lòng đăng nhập.");
+                        document.getElementById('email').value = email;
+                    })
+                    .catch((error) => {
+                        console.error("Lỗi đăng ký:", error);
+                        alert("Lỗi đăng ký: " + error.message);
+                    });
+            }
         });
 
         // Kiểm tra nếu đã đăng nhập thì chuyển hướng
         auth.onAuthStateChanged((user) => {
             if (user) {
-                console.log("Đã đăng nhập, chuyển hướng...");
-                window.location.href = 'timesheet.html';
+                console.log("User already logged in:", user.email);
+                console.log("Redirecting to chamcong.html...");
+                window.location.href = 'chamcong.html';
+            } else {
+                console.log("No user logged in");
             }
         });
+
+        // Test accounts for demo
+        console.log("Test accounts:");
+        console.log("Email: test@example.com");
+        console.log("Password: 123456");
+        console.log("Or create your own account using the register link");
     </script>
 </body>
 </html>
