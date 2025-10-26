@@ -176,6 +176,32 @@
         .mobile-controls button {
             flex: 1;
         }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .login-prompt button {
+            margin: 10px;
+            padding: 10px 20px;
+        }
         
         /* Responsive styles */
         @media (max-width: 768px) {
@@ -263,11 +289,24 @@
             </div>
         </div>
 
-        <div class="navigation">
-            <a href="index.html" class="nav-button">← Quay lại Dashboard</a>
+        <div id="loading-message" class="loading">
+            Đang kiểm tra đăng nhập...
+        </div>
+
+        <div id="error-container" class="hidden">
+            <div class="error-message" id="error-message"></div>
+            <div class="login-prompt">
+                <p>Vui lòng đăng nhập để tiếp tục</p>
+                <button id="go-to-login-btn" class="nav-button">Đi đến trang đăng nhập</button>
+                <button id="retry-btn">Thử lại</button>
+            </div>
         </div>
 
         <div id="app-content" class="hidden">
+            <div class="navigation">
+                <a href="index.html" class="nav-button">← Quay lại Dashboard</a>
+            </div>
+
             <div class="filter-section">
                 <select id="year-select">
                     <option value="">Chọn năm</option>
@@ -327,7 +366,14 @@
         };
 
         // Khởi tạo Firebase
-        firebase.initializeApp(firebaseConfig);
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase đã được khởi tạo");
+        } catch (error) {
+            console.error("Lỗi khởi tạo Firebase:", error);
+            showError("Lỗi khởi tạo ứng dụng: " + error.message);
+        }
+
         const auth = firebase.auth();
         const database = firebase.database();
 
@@ -335,6 +381,7 @@
         let currentUser = null;
         let currentData = {};
         let currentWeekDays = [];
+        let authCheckCompleted = false;
 
         // DOM Elements
         const appContent = document.getElementById('app-content');
@@ -351,9 +398,47 @@
         const timesheetBody = document.getElementById('timesheet-body');
         const weekDaysContainer = document.getElementById('week-days');
         const weekInfo = document.getElementById('week-info');
+        const loadingMessage = document.getElementById('loading-message');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessage = document.getElementById('error-message');
+        const goToLoginBtn = document.getElementById('go-to-login-btn');
+        const retryBtn = document.getElementById('retry-btn');
+
+        // Hiển thị lỗi
+        function showError(message) {
+            console.error("Lỗi:", message);
+            errorMessage.textContent = message;
+            loadingMessage.classList.add('hidden');
+            errorContainer.classList.remove('hidden');
+            appContent.classList.add('hidden');
+        }
+
+        // Ẩn lỗi
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+        // Kiểm tra kết nối Firebase
+        function checkFirebaseConnection() {
+            const connectedRef = database.ref(".info/connected");
+            connectedRef.on("value", function(snap) {
+                if (snap.val() === true) {
+                    console.log("Đã kết nối với Firebase");
+                } else {
+                    console.log("Mất kết nối với Firebase");
+                }
+            });
+        }
 
         // Khởi tạo các combobox
         function initializeSelects() {
+            console.log("Đang khởi tạo combobox...");
+            
+            // Xóa các option cũ (giữ lại option đầu tiên)
+            while (yearSelect.children.length > 1) yearSelect.removeChild(yearSelect.lastChild);
+            while (monthSelect.children.length > 1) monthSelect.removeChild(monthSelect.lastChild);
+            while (weekSelect.children.length > 1) weekSelect.removeChild(weekSelect.lastChild);
+            
             // Năm (từ 2020 đến năm hiện tại + 1)
             const currentYear = new Date().getFullYear();
             for (let year = 2020; year <= currentYear + 1; year++) {
@@ -396,6 +481,8 @@
             // Đảm bảo tuần không vượt quá 4
             weekSelect.value = Math.min(currentWeek, 4);
             
+            console.log("Đã khởi tạo combobox xong");
+            
             // Cập nhật ngày trong tuần
             updateWeekDays();
         }
@@ -407,6 +494,8 @@
             const week = parseInt(weekSelect.value);
             
             if (!year || !month || !week) return;
+            
+            console.log("Đang cập nhật ngày trong tuần:", year, month, week);
             
             // Xóa các ngày hiện tại
             weekDaysContainer.innerHTML = '';
@@ -455,12 +544,16 @@
                 });
             }
             
+            console.log("Đã cập nhật", currentWeekDays.length, "ngày trong tuần");
+            
             // Cập nhật bảng chấm công
             updateTimesheetTable();
         }
 
         // Cập nhật bảng chấm công
         function updateTimesheetTable() {
+            console.log("Đang cập nhật bảng chấm công...");
+            
             // Xóa nội dung cũ
             timesheetBody.innerHTML = '';
             
@@ -481,14 +574,27 @@
             
             // Thêm dữ liệu nhân viên
             if (currentData.employees) {
+                console.log("Có", Object.keys(currentData.employees).length, "nhân viên");
                 Object.keys(currentData.employees).forEach((employeeId, index) => {
                     const employee = currentData.employees[employeeId];
                     addEmployeeRow(employee, employeeId, index + 1);
                 });
+            } else {
+                console.log("Không có dữ liệu nhân viên");
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 8 + currentWeekDays.length;
+                emptyCell.textContent = 'Chưa có dữ liệu nhân viên. Hãy thêm nhân viên mới.';
+                emptyCell.style.textAlign = 'center';
+                emptyCell.style.padding = '20px';
+                emptyRow.appendChild(emptyCell);
+                timesheetBody.appendChild(emptyRow);
             }
             
             // Tính toán tổng công và tổng lương
             calculateTotals();
+            
+            console.log("Đã cập nhật bảng chấm công xong");
         }
 
         // Thêm hàng nhân viên vào bảng
@@ -660,7 +766,10 @@
 
         // Lưu dữ liệu lên Firebase
         function saveData() {
-            if (!currentUser) return;
+            if (!currentUser) {
+                alert('Vui lòng đăng nhập để lưu dữ liệu');
+                return;
+            }
             
             const year = yearSelect.value;
             const month = monthSelect.value;
@@ -678,7 +787,7 @@
                 })
                 .catch(error => {
                     console.error('Lỗi khi lưu dữ liệu:', error);
-                    alert('Có lỗi xảy ra khi lưu dữ liệu');
+                    alert('Có lỗi xảy ra khi lưu dữ liệu: ' + error.message);
                 });
         }
 
@@ -692,14 +801,18 @@
             
             if (!year || !month || !week) return;
             
+            console.log("Đang tải dữ liệu cho:", year, month, week);
+            
             const userDataRef = database.ref(`users/${currentUser.uid}/timesheets/${year}/${month}/${week}`);
             userDataRef.once('value')
                 .then(snapshot => {
                     currentData = snapshot.val() || {};
+                    console.log("Dữ liệu đã tải:", currentData);
                     updateTimesheetTable();
                 })
                 .catch(error => {
                     console.error('Lỗi khi tải dữ liệu:', error);
+                    showError('Lỗi khi tải dữ liệu: ' + error.message);
                 });
         }
 
@@ -707,17 +820,45 @@
         function handleLogout() {
             auth.signOut()
                 .then(() => {
+                    console.log("Đã đăng xuất");
                     currentUser = null;
                     updateUI();
                 })
                 .catch((error) => {
                     console.error('Lỗi khi đăng xuất:', error);
+                    alert('Lỗi khi đăng xuất: ' + error.message);
                 });
+        }
+
+        // Chuyển hướng đến trang đăng nhập
+        function goToLogin() {
+            window.location.href = 'index.html';
+        }
+
+        // Thử lại kết nối
+        function retryConnection() {
+            hideError();
+            loadingMessage.classList.remove('hidden');
+            // Đợi một chút rồi kiểm tra lại trạng thái đăng nhập
+            setTimeout(() => {
+                const user = auth.currentUser;
+                if (user) {
+                    currentUser = user;
+                    updateUI();
+                } else {
+                    showError('Vẫn chưa có người dùng đăng nhập. Vui lòng đăng nhập.');
+                }
+            }, 1000);
         }
 
         // Cập nhật giao diện dựa trên trạng thái đăng nhập
         function updateUI() {
+            console.log("Đang cập nhật UI, user:", currentUser);
+            
             if (currentUser) {
+                console.log("User đã đăng nhập:", currentUser.email);
+                loadingMessage.classList.add('hidden');
+                errorContainer.classList.add('hidden');
                 appContent.classList.remove('hidden');
                 userInfo.classList.remove('hidden');
                 userEmail.textContent = currentUser.email;
@@ -725,36 +866,70 @@
                 // Khởi tạo các combobox nếu chưa được khởi tạo
                 if (yearSelect.children.length <= 1) {
                     initializeSelects();
+                } else {
+                    // Nếu đã khởi tạo rồi, chỉ cần tải dữ liệu
+                    loadData();
                 }
                 
-                // Tải dữ liệu
-                loadData();
+                // Kiểm tra kết nối
+                checkFirebaseConnection();
+                
             } else {
-                appContent.classList.add('hidden');
-                userInfo.classList.add('hidden');
-                // Chuyển hướng về trang đăng nhập nếu chưa đăng nhập
-                window.location.href = 'index.html';
+                console.log("Chưa có user đăng nhập");
+                showError('Bạn chưa đăng nhập. Vui lòng đăng nhập để sử dụng ứng dụng.');
             }
         }
 
         // Lắng nghe sự kiện
         logoutBtn.addEventListener('click', handleLogout);
-        yearSelect.addEventListener('change', updateWeekDays);
-        monthSelect.addEventListener('change', updateWeekDays);
-        weekSelect.addEventListener('change', updateWeekDays);
+        yearSelect.addEventListener('change', function() {
+            updateWeekDays();
+            loadData();
+        });
+        monthSelect.addEventListener('change', function() {
+            updateWeekDays();
+            loadData();
+        });
+        weekSelect.addEventListener('change', function() {
+            updateWeekDays();
+            loadData();
+        });
         addEmployeeBtn.addEventListener('click', addNewEmployee);
         mobileAddEmployeeBtn.addEventListener('click', addNewEmployee);
         saveBtn.addEventListener('click', saveData);
         mobileSaveBtn.addEventListener('click', saveData);
+        goToLoginBtn.addEventListener('click', goToLogin);
+        retryBtn.addEventListener('click', retryConnection);
 
         // Lắng nghe trạng thái xác thực
         auth.onAuthStateChanged((user) => {
+            console.log("Trạng thái auth thay đổi:", user);
             currentUser = user;
+            authCheckCompleted = true;
             updateUI();
+        }, (error) => {
+            console.error("Lỗi xác thực:", error);
+            showError('Lỗi xác thực: ' + error.message);
+            authCheckCompleted = true;
         });
 
-        // Khởi tạo ứng dụng
-        updateUI();
+        // Khởi động ứng dụng
+        console.log("Ứng dụng đang khởi động...");
+        checkFirebaseConnection();
+
+        // Timeout để đảm bảo không bị treo
+        setTimeout(() => {
+            if (!authCheckCompleted) {
+                console.log("Timeout kiểm tra auth");
+                const user = auth.currentUser;
+                if (user) {
+                    currentUser = user;
+                    updateUI();
+                } else {
+                    showError('Không thể kiểm tra trạng thái đăng nhập. Vui lòng thử lại.');
+                }
+            }
+        }, 5000);
     </script>
 </body>
 </html>
