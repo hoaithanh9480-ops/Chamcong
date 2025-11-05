@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đội - Nhân viên</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Thanh header cố định */
+        .fixed-header {
+            background-color: #34495e;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            height: 60px;
+        }
+
+        .fixed-header h2 {
+            font-size: 1.3rem;
+            font-weight: normal;
+        }
+
+        .fixed-header .back-btn {
+            background-color: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+
+        .fixed-header .back-btn:hover {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            margin-top: 60px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .form-field {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .date-input {
+            position: relative;
+        }
+
+        .date-input::after {
+            content: "📅";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .team-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .team-selector select {
+            flex: 1;
+        }
+
+        .add-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+        }
+
+        .add-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+
+        .save-btn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .save-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .update-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .update-btn:hover {
+            background-color: #e67e22;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .cancel-btn {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background-color: #7f8c8d;
+        }
+
+        .table-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 5px;
+        }
+
+        .edit-btn, .remove-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .edit-btn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .remove-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .remove-btn:hover {
+            background-color: #c0392b;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .close-btn:hover {
+            color: #e74c3c;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .fixed-header {
+                padding: 8px 15px;
+                height: 50px;
+            }
+            
+            .fixed-header h2 {
+                font-size: 1rem;
+            }
+            
+            .fixed-header .back-btn {
+                padding: 4px 8px;
+                font-size: 0.85rem;
+            }
+            
+            .container {
+                padding: 10px;
+                margin-top: 50px;
+            }
+            
+            .form-section, .table-section {
+                padding: 15px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fixed-header {
+                padding: 6px 10px;
+                height: 45px;
+            }
+            
+            .fixed-header h2 {
+                font-size: 0.9rem;
+            }
+            
+            .container {
+                padding: 8px;
+                margin-top: 45px;
+            }
+            
+            .form-section, .table-section {
+                padding: 12px;
+            }
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <header class="fixed-header">
+        <h2>Quản lý Đội - Nhân viên</h2>
+        <div>
+            <button class="back-btn" onclick="window.location.href='dashboard.html'">Quay lại</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="form-section">
+            <h3>Thông tin nhân viên</h3>
+            <div class="form-group">
+                <div class="team-selector">
+                    <div class="form-field">
+                        <label for="teamSelect">Tên đội</label>
+                        <select id="teamSelect">
+                            <option value="">-- Chọn đội --</option>
+                        </select>
+                    </div>
+                    <button class="add-btn" id="addTeamBtn">+</button>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="employeeName">Tên nhân viên</label>
+                    <input type="text" id="employeeName" placeholder="Nhập tên nhân viên">
+                </div>
+                
+                <div class="form-field date-input">
+                    <label for="birthDate">Ngày sinh</label>
+                    <input type="date" id="birthDate">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="idNumber">Số CCCD</label>
+                    <input type="text" id="idNumber" placeholder="Nhập số CCCD">
+                </div>
+                
+                <div class="form-field">
+                    <label for="position">Chức vụ</label>
+                    <input type="text" id="position" placeholder="Nhập chức vụ">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="dailySalary">Lương ngày</label>
+                    <input type="number" id="dailySalary" placeholder="Nhập lương ngày">
+                </div>
+                
+                <div class="form-field">
+                    <label for="overtimeSalary">Lương tăng ca</label>
+                    <input type="number" id="overtimeSalary" placeholder="Nhập lương tăng ca">
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn save-btn" id="saveBtn">Lưu</button>
+                <button class="btn update-btn" id="updateBtn" style="display: none;">Cập nhật</button>
+                <button class="btn delete-btn" id="deleteBtn" style="display: none;">Xóa</button>
+                <button class="btn cancel-btn" id="cancelBtn" style="display: none;">Hủy</button>
+            </div>
+        </div>
+        
+        <div class="table-section">
+            <h3>Danh sách nhân viên</h3>
+            <table id="employeeTable">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên đội</th>
+                        <th>Tên nhân viên</th>
+                        <th>Ngày sinh</th>
+                        <th>Số CCCD</th>
+                        <th>Chức vụ</th>
+                        <th>Lương ngày</th>
+                        <th>Lương tăng ca</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal thêm đội mới -->
+    <div class="modal" id="teamModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Thêm đội mới</h3>
+                <button class="close-btn" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="newTeamName">Tên đội mới</label>
+                <input type="text" id="newTeamName" placeholder="Nhập tên đội mới">
+            </div>
+            <div class="action-buttons">
+                <button class="btn save-btn" id="saveTeamBtn">Lưu</button>
+                <button class="btn cancel-btn" id="cancelTeamBtn">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { 
+            apiKey : "AIzaSyDTOD66P7I9d9Nc-SeRySoCskl5EEquR-w" , 
+            authDomain : "chamcong-9385e.firebaseapp.com" , 
+            databaseURL : "https://chamcong-9385e-default-rtdb.asia-southeast1.firebasedatabase.app" , 
+            projectId : "chamcong-9385e" , 
+            storageBucket : "chamcong-9385e.firebasestorage.app" , 
+            messagingSenderId : "416187735141" , 
+            appId : "1:416187735141:web:e0a6010118ae5ce5b47a8c" 
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // Biến toàn cục
+        let currentUser = null;
+        let teams = [];
+        let employees = [];
+        let editingEmployeeId = null;
+        
+        // DOM Elements
+        const teamSelect = document.getElementById('teamSelect');
+        const addTeamBtn = document.getElementById('addTeamBtn');
+        const employeeName = document.getElementById('employeeName');
+        const birthDate = document.getElementById('birthDate');
+        const idNumber = document.getElementById('idNumber');
+        const position = document.getElementById('position');
+        const dailySalary = document.getElementById('dailySalary');
+        const overtimeSalary = document.getElementById('overtimeSalary');
+        const saveBtn = document.getElementById('saveBtn');
+        const updateBtn = document.getElementById('updateBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const employeeTableBody = document.getElementById('employeeTableBody');
+        const teamModal = document.getElementById('teamModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const newTeamName = document.getElementById('newTeamName');
+        const saveTeamBtn = document.getElementById('saveTeamBtn');
+        const cancelTeamBtn = document.getElementById('cancelTeamBtn');
+        
+        // Kiểm tra trạng thái đăng nhập
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                loadTeams();
+                loadEmployees();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+        
+        // Hàm lấy đường dẫn cơ sở dữ liệu cho user hiện tại
+        function getUserPath() {
+            return `users/${currentUser.uid}`;
+        }
+        
+        // Hàm tải danh sách đội
+        function loadTeams() {
+            const userPath = getUserPath();
+            database.ref(`${userPath}/teams`).on('value', (snapshot) => {
+                teams = [];
+                teamSelect.innerHTML = '<option value="">-- Chọn đội --</option>';
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        const team = {
+                            id: childSnapshot.key,
+                            ...childSnapshot.val()
+                        };
+                        teams.push(team);
+                        
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        teamSelect.appendChild(option);
+                    });
+                }
+            });
+        }
+        
+        // Hàm tải danh sách nhân viên
+        function loadEmployees() {
+            const userPath = getUserPath();
+            database.ref(`${userPath}/employees`).on('value', (snapshot) => {
+                employees = [];
+                employeeTableBody.innerHTML = '';
+                
+                if (snapshot.exists()) {
+                    let index = 1;
+                    snapshot.forEach((childSnapshot) => {
+                        const employee = {
+                            id: childSnapshot.key,
+                            ...childSnapshot.val()
+                        };
+                        employees.push(employee);
+                        
+                        const teamName = getTeamNameById(employee.teamId);
+                        const formattedDate = formatDateForDisplay(employee.birthDate);
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index}</td>
+                            <td>${teamName}</td>
+                            <td>${employee.name}</td>
+                            <td>${formattedDate}</td>
+                            <td>${employee.idNumber}</td>
+                            <td>${employee.position}</td>
+                            <td>${formatCurrency(employee.dailySalary)}</td>
+                            <td>${formatCurrency(employee.overtimeSalary || 0)}</td>
+                            <td class="action-cell">
+                                <button class="edit-btn" onclick="editEmployee('${employee.id}')">Sửa</button>
+                                <button class="remove-btn" onclick="deleteEmployee('${employee.id}')">Xóa</button>
+                            </td>
+                        `;
+                        
+                        employeeTableBody.appendChild(row);
+                        index++;
+                    });
+                }
+            });
+        }
+        
+        // Hàm lấy tên đội theo ID
+        function getTeamNameById(teamId) {
+            const team = teams.find(t => t.id === teamId);
+            return team ? team.name : 'Không xác định';
+        }
+        
+        // Hàm định dạng tiền tệ
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+        
+        // Hàm định dạng ngày tháng để hiển thị (dd/mm/yyyy)
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Hàm thêm nhân viên mới
+        function addEmployee() {
+            const teamId = teamSelect.value;
+            const name = employeeName.value.trim();
+            const birthDateValue = birthDate.value;
+            const idNumberValue = idNumber.value.trim();
+            const positionValue = position.value.trim();
+            const dailySalaryValue = dailySalary.value;
+            const overtimeSalaryValue = overtimeSalary.value;
+            
+            // Kiểm tra dữ liệu đầu vào
+            if (!teamId) {
+                alert('Vui lòng chọn đội');
+                return;
+            }
+            
+            if (!name) {
+                alert('Vui lòng nhập tên nhân viên');
+                return;
+            }
+            
+            if (!birthDateValue) {
+                alert('Vui lòng nhập ngày sinh');
+                return;
+            }
+            
+            if (!idNumberValue) {
+                alert('Vui lòng nhập số CCCD');
+                return;
+            }
+            
+            if (!positionValue) {
+                alert('Vui lòng nhập chức vụ');
+                return;
+            }
+            
+            if (!dailySalaryValue) {
+                alert('Vui lòng nhập lương ngày');
+                return;
+            }
+            
+            if (!overtimeSalaryValue) {
+                alert('Vui lòng nhập lương tăng ca');
+                return;
+            }
+            
+            // Tạo đối tượng nhân viên mới
+            const newEmployee = {
+                teamId: teamId,
+                name: name,
+                birthDate: birthDateValue,
+                idNumber: idNumberValue,
+                position: positionValue,
+                dailySalary: parseFloat(dailySalaryValue),
+                overtimeSalary: parseFloat(overtimeSalaryValue),
+                createdAt: new Date().toISOString()
+            };
+            
+            // Lưu vào Firebase
+            const userPath = getUserPath();
+            database.ref(`${userPath}/employees`).push(newEmployee)
+                .then(() => {
+                    resetForm();
+                    alert('Thêm nhân viên thành công!');
+                })
+                .catch((error) => {
+                    console.error('Lỗi khi thêm nhân viên:', error);
+                    alert('Có lỗi xảy ra khi thêm nhân viên');
+                });
+        }
+        
+        // Hàm sửa nhân viên
+        function editEmployee(employeeId) {
+            const employee = employees.find(emp => emp.id === employeeId);
+            if (!employee) return;
+            
+            // Hiển thị thông tin nhân viên trong form
+            teamSelect.value = employee.teamId;
+            employeeName.value = employee.name;
+            birthDate.value = employee.birthDate;
+            idNumber.value = employee.idNumber;
+            position.value = employee.position;
+            dailySalary.value = employee.dailySalary;
+            overtimeSalary.value = employee.overtimeSalary || '';
+            
+            // Chuyển sang chế độ chỉnh sửa
+            editingEmployeeId = employeeId;
+            saveBtn.style.display = 'none';
+            updateBtn.style.display = 'inline-block';
+            deleteBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'inline-block';
+        }
+        
+        // Hàm cập nhật nhân viên
+        function updateEmployee() {
+            if (!editingEmployeeId) return;
+            
+            const teamId = teamSelect.value;
+            const name = employeeName.value.trim();
+            const birthDateValue = birthDate.value;
+            const idNumberValue = idNumber.value.trim();
+            const positionValue = position.value.trim();
+            const dailySalaryValue = dailySalary.value;
+            const overtimeSalaryValue = overtimeSalary.value;
+            
+            // Kiểm tra dữ liệu đầu vào
+            if (!teamId) {
+                alert('Vui lòng chọn đội');
+                return;
+            }
+            
+            if (!name) {
+                alert('Vui lòng nhập tên nhân viên');
+                return;
+            }
+            
+            if (!birthDateValue) {
+                alert('Vui lòng nhập ngày sinh');
+                return;
+            }
+            
+            if (!idNumberValue) {
+                alert('Vui lòng nhập số CCCD');
+                return;
+            }
+            
+            if (!positionValue) {
+                alert('Vui lòng nhập chức vụ');
+                return;
+            }
+            
+            if (!dailySalaryValue) {
+                alert('Vui lòng nhập lương ngày');
+                return;
+            }
+            
+            if (!overtimeSalaryValue) {
+                alert('Vui lòng nhập lương tăng ca');
+                return;
+            }
+            
+            // Tạo đối tượng nhân viên cập nhật
+            const updatedEmployee = {
+                teamId: teamId,
+                name: name,
+                birthDate: birthDateValue,
+                idNumber: idNumberValue,
+                position: positionValue,
+                dailySalary: parseFloat(dailySalaryValue),
+                overtimeSalary: parseFloat(overtimeSalaryValue),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Cập nhật trong Firebase
+            const userPath = getUserPath();
+            database.ref(`${userPath}/employees/${editingEmployeeId}`).update(updatedEmployee)
+                .then(() => {
+                    resetForm();
+                    alert('Cập nhật nhân viên thành công!');
+                })
+                .catch((error) => {
+                    console.error('Lỗi khi cập nhật nhân viên:', error);
+                    alert('Có lỗi xảy ra khi cập nhật nhân viên');
+                });
+        }
+        
+        // Hàm xóa nhân viên
+        function deleteEmployee(employeeId) {
+            if (!confirm('Bạn có chắc chắn muốn xóa nhân viên này?')) {
+                return;
+            }
+            
+            const userPath = getUserPath();
+            database.ref(`${userPath}/employees/${employeeId}`).remove()
+                .then(() => {
+                    if (editingEmployeeId === employeeId) {
+                        resetForm();
+                    }
+                    alert('Xóa nhân viên thành công!');
+                })
+                .catch((error) => {
+                    console.error('Lỗi khi xóa nhân viên:', error);
+                    alert('Có lỗi xảy ra khi xóa nhân viên');
+                });
+        }
+        
+        // Hàm reset form
+        function resetForm() {
+            teamSelect.value = '';
+            employeeName.value = '';
+            birthDate.value = '';
+            idNumber.value = '';
+            position.value = '';
+            dailySalary.value = '';
+            overtimeSalary.value = '';
+            
+            editingEmployeeId = null;
+            saveBtn.style.display = 'inline-block';
+            updateBtn.style.display = 'none';
+            deleteBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+        }
+        
+        // Hàm thêm đội mới
+        function addNewTeam() {
+            const teamName = newTeamName.value.trim();
+            
+            if (!teamName) {
+                alert('Vui lòng nhập tên đội');
+                return;
+            }
+            
+            // Kiểm tra xem đội đã tồn tại chưa
+            const existingTeam = teams.find(team => team.name.toLowerCase() === teamName.toLowerCase());
+            if (existingTeam) {
+                alert('Đội này đã tồn tại');
+                return;
+            }
+            
+            // Thêm đội mới vào Firebase
+            const userPath = getUserPath();
+            database.ref(`${userPath}/teams`).push({
+                name: teamName,
+                createdAt: new Date().toISOString()
+            })
+            .then(() => {
+                newTeamName.value = '';
+                teamModal.style.display = 'none';
+                alert('Thêm đội mới thành công!');
+            })
+            .catch((error) => {
+                console.error('Lỗi khi thêm đội mới:', error);
+                alert('Có lỗi xảy ra khi thêm đội mới');
+            });
+        }
+        
+        // Event Listeners
+        saveBtn.addEventListener('click', addEmployee);
+        updateBtn.addEventListener('click', updateEmployee);
+        deleteBtn.addEventListener('click', () => {
+            if (editingEmployeeId) {
+                deleteEmployee(editingEmployeeId);
+            }
+        });
+        cancelBtn.addEventListener('click', resetForm);
+        
+        addTeamBtn.addEventListener('click', () => {
+            teamModal.style.display = 'flex';
+        });
+        
+        closeModalBtn.addEventListener('click', () => {
+            teamModal.style.display = 'none';
+        });
+        
+        cancelTeamBtn.addEventListener('click', () => {
+            teamModal.style.display = 'none';
+        });
+        
+        saveTeamBtn.addEventListener('click', addNewTeam);
+        
+        // Đóng modal khi click bên ngoài
+        window.addEventListener('click', (event) => {
+            if (event.target === teamModal) {
+                teamModal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

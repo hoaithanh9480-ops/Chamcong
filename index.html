@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập / Đăng ký - Quản lý nhà trọ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+        }
+        .auth-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .auth-form h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+        .form-group {
+            /* Đảm bảo có dòng này để định vị con mắt */
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .toggle-link {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #3498db;
+        }
+        .error {
+            color: #c62828;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* CSS cho biểu tượng con mắt */
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(20%);
+            cursor: pointer;
+            user-select: none;
+            color: #999;
+            font-size: 1.2rem;
+        }
+        
+        /* CSS cho thông báo cập nhật - ÁP DỤNG CHO CẢ PC VÀ MOBILE */
+        .update-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-width: 90%;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+        .update-header {
+            background: #3498db;
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .update-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .update-content {
+            padding: 15px;
+        }
+        .update-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .update-content li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .update-content li:last-child {
+            margin-bottom: 0;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive cho màn hình nhỏ (mobile) */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+        
+            .btn {
+                width: 100%;
+                text-align: center;
+                margin-top: 10px;
+            }
+        
+            .container {
+                padding: 10px;
+            }
+        
+            h2 {
+                font-size: 1.2rem;
+                text-align: center;
+            }
+            
+            /* Điều chỉnh thông báo cho mobile */
+            .update-notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+                max-width: none;
+            }
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <!-- <div class="update-notification" id="updateNotification">
+        <div class="update-header">
+            <h3>Cập nhật mới</h3>
+            <button class="close-btn" id="closeUpdateBtn">&times;</button>
+        </div>
+        <div class="update-content">
+            <ul>
+                <li>Bản cập nhật này bổ sung giao diện sử dụng trên điện thoại</li>
+                <li>Thêm người ở chung vào danh sách người thuê trọ</li>
+                <li>Cải thiện hiệu suất và sửa lỗi hệ thống</li>
+            </ul>
+        </div>
+    </div> -->
+
+    <div class="auth-container">
+        <div class="auth-form" id="loginForm">
+            <h2>Đăng nhập hệ thống</h2>
+            <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="Nhập email">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Mật khẩu</label>
+                <input type="password" id="loginPassword" placeholder="Nhập mật khẩu">
+                <span class="password-toggle" onclick="togglePassword('loginPassword', this)">👁️</span>
+            </div>
+            <button id="loginBtn" class="btn">Đăng nhập</button>
+            <div id="loginError" class="error"></div>
+            <div class="toggle-link" onclick="showRegister()">Chưa có tài khoản? Đăng ký</div>
+        </div>
+
+        <div class="auth-form" id="registerForm" style="display:none;">
+            <h2>Đăng ký tài khoản</h2>
+            <div class="form-group">
+                <label for="registerEmail">Email</label>
+                <input type="email" id="registerEmail" placeholder="Nhập email">
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Mật khẩu</label>
+                <input type="password" id="registerPassword" placeholder="Mật khẩu (6 chữ số)">
+                <span class="password-toggle" onclick="togglePassword('registerPassword', this)">👁️</span>
+            </div>
+            <button id="registerBtn" class="btn">Đăng ký</button>
+            <div id="registerError" class="error"></div>
+            <div class="toggle-link" onclick="showLogin()">Đã có tài khoản? Đăng nhập</div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = { 
+  apiKey : "AIzaSyDTOD66P7I9d9Nc-SeRySoCskl5EEquR-w" , 
+  authDomain : "chamcong-9385e.firebaseapp.com" , 
+  databaseURL : "https://chamcong-9385e-default-rtdb.asia-southeast1.firebaseddatabase.app" , 
+  projectId : "chamcong-9385e" , 
+  storageBucket : "chamcong-9385e.firebasestorage.app" , 
+  messagingSenderId : "416187735141" , 
+  appId : "1:416187735141:web:e0a6010118ae5ce5b47a8c" 
+};
+
+        // Khởi tạo Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Chuyển đổi form
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+        function showLogin() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+
+        // Đóng thông báo cập nhật
+        document.getElementById('closeUpdateBtn').addEventListener('click', function() {
+            document.getElementById('updateNotification').style.display = 'none';
+        });
+
+        // Hàm ẩn/hiện mật khẩu
+        function togglePassword(id, element) {
+            const passwordInput = document.getElementById(id);
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Chuyển đổi biểu tượng
+            if (type === 'password') {
+                element.textContent = '👁️';
+            } else {
+                element.textContent = '🙈';
+            }
+        }
+
+        // Đăng nhập
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                document.getElementById('loginError').textContent = 'Vui lòng nhập đầy đủ thông tin!';
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    window.location.href = 'dashboard.html';
+                })
+                .catch(() => {
+                    document.getElementById('loginError').textContent = 'Email hoặc mật khẩu không đúng!';
+                });
+        });
+
+        // Đăng ký
+        document.getElementById('registerBtn').addEventListener('click', () => {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (!email || !password) {
+                document.getElementById('registerError').textContent = 'Vui lòng nhập đầy đủ thông tin!';
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(() => {
+                    alert('Đăng ký thành công! Vui lòng đăng nhập.');
+                    showLogin();
+                })
+                .catch((error) => {
+                    document.getElementById('registerError').textContent = 'Lỗi: ' + error.message;
+                });
+        });
+        
+    </script>
+</body>
+</html>
