@@ -179,6 +179,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
             overflow-x: auto;
+            position: relative;
         }
 
         table {
@@ -229,6 +230,11 @@
             gap: 10px;
             margin-top: 20px;
             justify-content: flex-end;
+            position: sticky;
+            left: 0;
+            background: white;
+            padding: 15px 0;
+            border-top: 1px solid #eee;
         }
 
         /* Responsive */
@@ -289,6 +295,23 @@
             input[type="number"] {
                 width: 60px;
             }
+
+            /* QUAN TRỌNG: Cố định nút trên mobile */
+            .action-buttons {
+                position: sticky;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: white;
+                padding: 15px;
+                margin: 20px -15px -15px -15px;
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+
+            .table-section {
+                padding-bottom: 80px; /* Tạo khoảng trống cho nút */
+            }
         }
 
         @media (max-width: 480px) {
@@ -319,6 +342,21 @@
                 width: 50px;
                 padding: 3px;
             }
+
+            .action-buttons {
+                padding: 12px;
+                margin: 20px -12px -12px -12px;
+            }
+
+            .table-section {
+                padding-bottom: 70px; /* Tạo khoảng trống cho nút */
+            }
+        }
+
+        /* Thêm style cho scroll ngang trên mobile */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -380,7 +418,7 @@
             
             <div class="table-section">
                 <h3>Bảng chấm công tuần</h3>
-                <div id="tableContainer">
+                <div class="table-container">
                     <table id="attendanceTable">
                         <thead>
                             <tr id="tableHeader">
@@ -440,7 +478,7 @@
             
             <div class="table-section">
                 <h3>Bảng chấm tăng ca</h3>
-                <div id="overtimeTableContainer">
+                <div class="table-container">
                     <table id="overtimeTable">
                         <thead>
                             <tr id="overtimeTableHeader">
