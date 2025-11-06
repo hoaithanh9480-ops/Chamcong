@@ -830,152 +830,167 @@
         
         // Hàm tính tổng số giờ công từ dữ liệu chấm công
         function calculateTotalHours(employeeId, teamId, data) {
-            let totalHours = 0;
-            
-            // Duyệt qua tất cả các đội (nếu chọn "Tất cả đội")
-            const teamsToCheck = teamId === 'all' ? Object.keys(data) : [teamId];
-            
-            teamsToCheck.forEach(currentTeamId => {
-                if (data[currentTeamId] && data[currentTeamId][employeeId]) {
-                    Object.values(data[currentTeamId][employeeId]).forEach(hours => {
-                        totalHours += parseFloat(hours) || 0;
-                    });
-                }
+    let totalHours = 0;
+    
+    // Duyệt qua tất cả các đội (nếu chọn "Tất cả đội")
+    const teamsToCheck = teamId === 'all' ? Object.keys(data) : [teamId];
+    
+    teamsToCheck.forEach(currentTeamId => {
+        if (data[currentTeamId] && data[currentTeamId][employeeId]) {
+            Object.values(data[currentTeamId][employeeId]).forEach(hours => {
+                // Sử dụng hàm cộng chính xác để tránh làm tròn
+                totalHours = preciseAdd(totalHours, parseFloat(hours) || 0);
             });
-            
-            return totalHours;
         }
+    });
+    
+    return totalHours;
+}
         
         // Hàm lấy số giờ làm việc theo ngày
         function getHoursByDate(employeeId, teamId, dateString, data) {
-            let totalHours = 0;
-            
-            // Duyệt qua tất cả các đội (nếu chọn "Tất cả đội")
-            const teamsToCheck = teamId === 'all' ? Object.keys(data) : [teamId];
-            
-            teamsToCheck.forEach(currentTeamId => {
-                if (data[currentTeamId] && data[currentTeamId][employeeId] && data[currentTeamId][employeeId][dateString]) {
-                    totalHours += parseFloat(data[currentTeamId][employeeId][dateString]) || 0;
-                }
-            });
-            
-            return totalHours;
+    let totalHours = 0;
+    
+    // Duyệt qua tất cả các đội (nếu chọn "Tất cả đội")
+    const teamsToCheck = teamId === 'all' ? Object.keys(data) : [teamId];
+    
+    teamsToCheck.forEach(currentTeamId => {
+        if (data[currentTeamId] && data[currentTeamId][employeeId] && data[currentTeamId][employeeId][dateString]) {
+            // Sử dụng hàm cộng chính xác
+            totalHours = preciseAdd(totalHours, parseFloat(data[currentTeamId][employeeId][dateString]) || 0);
         }
+    });
+    
+    return totalHours;
+}
+
+// Hàm cộng số thập phân chính xác
+function preciseAdd(a, b) {
+    const precision = 100; // Độ chính xác 2 chữ số thập phân
+    return (Math.round(a * precision) + Math.round(b * precision)) / precision;
+}
+
+// Hàm nhân số thập phân chính xác
+function preciseMultiply(a, b) {
+    const precision = 10000; // Độ chính xác cao cho phép nhân
+    return (Math.round(a * precision) * Math.round(b * precision)) / (precision * precision);
+}
         
         // Hàm tạo bảng tổng hợp
         function generateSummaryTable(employees) {
-            // Ẩn thông báo loading
-            loadingMessage.style.display = 'none';
+    // Ẩn thông báo loading
+    loadingMessage.style.display = 'none';
+    
+    if (employees.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="20" class="no-data">Không có dữ liệu để hiển thị</td></tr>';
+        updateSummary(0, 0, 0, 0);
+        return;
+    }
+    
+    // Tạo header cho bảng
+    tableHeader.innerHTML = `
+        <th class="stt-column">STT</th>
+        <th class="employee-name">Họ và tên</th>
+        <th>Năm sinh</th>
+        <th>Số CCCD</th>
+        <th>Chức vụ</th>
+        <th class="salary-column">Lương ngày</th>
+        <th class="salary-column">Lương tăng ca</th>
+        <th>Tên Đội</th>
+        <th class="salary-column">Công tuần</th>
+        <th class="salary-column">Công tăng ca</th>
+        <th class="salary-column">Lương ngày</th>
+        <th class="salary-column">Lương tăng ca</th>
+    `;
+    
+    // Thêm các cột ngày
+    allWeekDays.forEach(day => {
+        const th = document.createElement('th');
+        th.className = `day-column ${day.isWeekend ? 'weekend' : ''}`;
+        th.innerHTML = `${day.dayName}<br>${day.formattedDate}`;
+        th.title = `${day.dateString}`;
+        tableHeader.appendChild(th);
+    });
+    
+    // Tạo body cho bảng
+    tableBody.innerHTML = '';
+    
+    let totalWork = 0;
+    let totalOvertime = 0;
+    let totalWeekly = 0;
+    let totalOvertimeSal = 0;
+    
+    employees.forEach((employee, index) => {
+        const teamId = employee.teamId;
+        const teamName = teams.find(t => t.id === teamId)?.name || 'Không xác định';
+        
+        // Tính toán các giá trị với độ chính xác cao
+        const workHours = calculateTotalHours(employee.id, teamSelect.value, attendanceData);
+        const overtimeHours = calculateTotalHours(employee.id, teamSelect.value, overtimeData);
+        const dailySalary = parseFloat(employee.dailySalary) || 0;
+        const overtimeRate = parseFloat(employee.overtimeSalary) || 0;
+        
+        // Sử dụng hàm nhân chính xác để tính lương
+        const weeklySalary = preciseMultiply(workHours, dailySalary);
+        const overtimeSalary = preciseMultiply(overtimeHours, overtimeRate);
+        
+        // Cộng dồn vào tổng với độ chính xác
+        totalWork = preciseAdd(totalWork, workHours);
+        totalOvertime = preciseAdd(totalOvertime, overtimeHours);
+        totalWeekly = preciseAdd(totalWeekly, weeklySalary);
+        totalOvertimeSal = preciseAdd(totalOvertimeSal, overtimeSalary);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="stt-column">${index + 1}</td>
+            <td class="employee-name">${employee.name}</td>
+            <td>${formatDateForDisplay(employee.birthDate)}</td>
+            <td>${employee.idNumber}</td>
+            <td>${employee.position}</td>
+            <td class="salary-column">${formatCurrency(dailySalary)}</td>
+            <td class="salary-column">${formatCurrency(overtimeRate)}</td>
+            <td>${teamName}</td>
+            <td class="salary-column">${workHours.toFixed(2)}</td> <!-- Hiển thị 2 chữ số thập phân -->
+            <td class="salary-column">${overtimeHours.toFixed(2)}</td> <!-- Hiển thị 2 chữ số thập phân -->
+            <td class="salary-column">${formatCurrency(weeklySalary)}</td>
+            <td class="salary-column">${formatCurrency(overtimeSalary)}</td>
+        `;
+        
+        // Thêm dữ liệu từng ngày
+        allWeekDays.forEach(day => {
+            const workHour = getHoursByDate(employee.id, teamSelect.value, day.dateString, attendanceData);
+            const overtimeHour = getHoursByDate(employee.id, teamSelect.value, day.dateString, overtimeData);
             
-            if (employees.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="20" class="no-data">Không có dữ liệu để hiển thị</td></tr>';
-                updateSummary(0, 0, 0, 0);
-                return;
-            }
+            const cell = document.createElement('td');
+            cell.className = day.isWeekend ? 'weekend' : '';
             
-            // Tạo header cho bảng
-            tableHeader.innerHTML = `
-                <th class="stt-column">STT</th>
-                <th class="employee-name">Họ và tên</th>
-                <th>Năm sinh</th>
-                <th>Số CCCD</th>
-                <th>Chức vụ</th>
-                <th class="salary-column">Lương ngày</th>
-                <th class="salary-column">Lương tăng ca</th>
-                <th>Tên Đội</th>
-                <th class="salary-column">Công tuần</th>
-                <th class="salary-column">Công tăng ca</th>
-                <th class="salary-column">Lương ngày</th>
-                <th class="salary-column">Lương tăng ca</th>
-            `;
-            
-            // Thêm các cột ngày
-            allWeekDays.forEach(day => {
-                const th = document.createElement('th');
-                th.className = `day-column ${day.isWeekend ? 'weekend' : ''}`;
-                th.innerHTML = `${day.dayName}<br>${day.formattedDate}`;
-                th.title = `${day.dateString}`;
-                tableHeader.appendChild(th);
-            });
-            
-            // Tạo body cho bảng
-            tableBody.innerHTML = '';
-            
-            let totalWork = 0;
-            let totalOvertime = 0;
-            let totalWeekly = 0;
-            let totalOvertimeSal = 0;
-            
-            employees.forEach((employee, index) => {
-                const teamId = employee.teamId;
-                const teamName = teams.find(t => t.id === teamId)?.name || 'Không xác định';
-                
-                // Tính toán các giá trị
-                const workHours = calculateTotalHours(employee.id, teamSelect.value, attendanceData);
-                const overtimeHours = calculateTotalHours(employee.id, teamSelect.value, overtimeData);
-                const dailySalary = parseFloat(employee.dailySalary) || 0;
-                const overtimeRate = parseFloat(employee.overtimeSalary) || 0;
-                
-                const weeklySalary = workHours * dailySalary;
-                const overtimeSalary = overtimeHours * overtimeRate;
-                
-                // Cộng dồn vào tổng
-                totalWork += workHours;
-                totalOvertime += overtimeHours;
-                totalWeekly += weeklySalary;
-                totalOvertimeSal += overtimeSalary;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="stt-column">${index + 1}</td>
-                    <td class="employee-name">${employee.name}</td>
-                    <td>${formatDateForDisplay(employee.birthDate)}</td>
-                    <td>${employee.idNumber}</td>
-                    <td>${employee.position}</td>
-                    <td class="salary-column">${formatCurrency(dailySalary)}</td>
-                    <td class="salary-column">${formatCurrency(overtimeRate)}</td>
-                    <td>${teamName}</td>
-                    <td class="salary-column">${workHours.toFixed(1)}</td>
-                    <td class="salary-column">${overtimeHours.toFixed(1)}</td>
-                    <td class="salary-column">${formatCurrency(weeklySalary)}</td>
-                    <td class="salary-column">${formatCurrency(overtimeSalary)}</td>
+            if (workHour > 0 || overtimeHour > 0) {
+                cell.innerHTML = `
+                    <div style="font-size: 0.8rem;">
+                        <div>C: ${workHour.toFixed(2)}</div> <!-- Hiển thị 2 chữ số thập phân -->
+                        <div>TC: ${overtimeHour.toFixed(2)}</div> <!-- Hiển thị 2 chữ số thập phân -->
+                    </div>
                 `;
-                
-                // Thêm dữ liệu từng ngày
-                allWeekDays.forEach(day => {
-                    const workHour = getHoursByDate(employee.id, teamSelect.value, day.dateString, attendanceData);
-                    const overtimeHour = getHoursByDate(employee.id, teamSelect.value, day.dateString, overtimeData);
-                    
-                    const cell = document.createElement('td');
-                    cell.className = day.isWeekend ? 'weekend' : '';
-                    
-                    if (workHour > 0 || overtimeHour > 0) {
-                        cell.innerHTML = `
-                            <div style="font-size: 0.8rem;">
-                                <div>C: ${workHour}</div>
-                                <div>TC: ${overtimeHour}</div>
-                            </div>
-                        `;
-                    } else {
-                        cell.innerHTML = '-';
-                    }
-                    row.appendChild(cell);
-                });
-                
-                tableBody.appendChild(row);
-            });
-            
-            // Cập nhật tổng kết
-            updateSummary(totalWork, totalOvertime, totalWeekly, totalOvertimeSal);
-        }
+            } else {
+                cell.innerHTML = '-';
+            }
+            row.appendChild(cell);
+        });
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Cập nhật tổng kết
+    updateSummary(totalWork, totalOvertime, totalWeekly, totalOvertimeSal);
+}
         
         // Hàm cập nhật tổng kết
         function updateSummary(work, overtime, weekly, overtimeSal) {
-            totalWorkHours.textContent = work.toFixed(1);
-            totalOvertimeHours.textContent = overtime.toFixed(1);
-            totalWeeklySalary.textContent = formatCurrency(weekly);
-            totalOvertimeSalary.textContent = formatCurrency(overtimeSal);
-        }
+    totalWorkHours.textContent = work.toFixed(2); // Hiển thị 2 chữ số thập phân
+    totalOvertimeHours.textContent = overtime.toFixed(2); // Hiển thị 2 chữ số thập phân
+    totalWeeklySalary.textContent = formatCurrency(weekly);
+    totalOvertimeSalary.textContent = formatCurrency(overtimeSal);
+}
         
         // Hàm xuất Excel với định dạng đẹp - ĐÃ THÊM KẺ KHUNG, CANH GIỮA VÀ IN ĐẬM
         function exportToExcel() {
