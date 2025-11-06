@@ -311,6 +311,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Thêm thư viện SheetJS để xuất Excel -->
+   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 </head>
 <body>
     <header class="fixed-header">
@@ -707,52 +710,65 @@
         
         // Hàm cập nhật tạm ứng
         function updateAdvance(index, value) {
-            const advanceAmount = parseFloat(value) || 0;
-            const rows = tableBody.querySelectorAll('tr');
-            const row = rows[index];
-            
-            if (row) {
-                const weeklySalaryText = row.cells[7].textContent;
-                const overtimeSalaryText = row.cells[10].textContent;
-                
-                // Lấy giá trị số từ chuỗi tiền tệ
-                const weeklySalary = parseFloat(weeklySalaryText.replace(/[^\d.-]/g, '')) || 0;
-                const overtimeSalary = parseFloat(overtimeSalaryText.replace(/[^\d.-]/g, '')) || 0;
-                
-                const totalSalary = weeklySalary + overtimeSalary;
-                const netSalary = totalSalary - advanceAmount;
-                
-                // Cập nhật các ô
-                row.cells[12].textContent = formatCurrency(totalSalary);
-                row.cells[13].textContent = formatCurrency(netSalary);
-                
-                // Tính lại tổng
-                recalculateTotals();
-            }
-        }
+    const advanceAmount = parseFloat(value) || 0;
+    const rows = tableBody.querySelectorAll('tr');
+    const row = rows[index];
+    
+    if (row) {
+        const weeklySalaryText = row.cells[7].textContent;
+        const overtimeSalaryText = row.cells[10].textContent;
+        
+        // SỬA LẠI: Hàm chuyển đổi chuỗi tiền tệ sang số chính xác
+        const weeklySalary = parseCurrency(weeklySalaryText);
+        const overtimeSalary = parseCurrency(overtimeSalaryText);
+        
+        const totalSalary = weeklySalary + overtimeSalary;
+        const netSalary = totalSalary - advanceAmount;
+        
+        // Cập nhật các ô
+        row.cells[12].textContent = formatCurrency(totalSalary);
+        row.cells[13].textContent = formatCurrency(netSalary);
+        
+        // Tính lại tổng
+        recalculateTotals();
+    }
+}
+
+// THÊM HÀM MỚI: Chuyển đổi chuỗi tiền tệ sang số
+function parseCurrency(currencyString) {
+    if (!currencyString) return 0;
+    
+    // Loại bỏ ký tự không phải số, dấu chấm và dấu phẩy
+    const cleaned = currencyString.replace(/[^\d,]/g, '');
+    
+    // Thay thế dấu phẩy thành dấu chấm để parseFloat hoạt động đúng
+    const normalized = cleaned.replace(/\./g, '').replace(',', '.');
+    
+    return parseFloat(normalized) || 0;
+}
         
         // Hàm tính lại tổng
         function recalculateTotals() {
-            let totalWeekly = 0;
-            let totalOvertime = 0;
-            let totalAdvanceAmount = 0;
-            let totalNet = 0;
-            
-            const rows = tableBody.querySelectorAll('tr');
-            rows.forEach(row => {
-                const weeklySalary = parseFloat(row.cells[7].textContent.replace(/[^\d.-]/g, '')) || 0;
-                const overtimeSalary = parseFloat(row.cells[10].textContent.replace(/[^\d.-]/g, '')) || 0;
-                const advanceAmount = parseFloat(row.cells[11].querySelector('input').value) || 0;
-                const netSalary = parseFloat(row.cells[13].textContent.replace(/[^\d.-]/g, '')) || 0;
-                
-                totalWeekly += weeklySalary;
-                totalOvertime += overtimeSalary;
-                totalAdvanceAmount += advanceAmount;
-                totalNet += netSalary;
-            });
-            
-            updateSummary(totalWeekly, totalOvertime, totalAdvanceAmount, totalNet);
-        }
+    let totalWeekly = 0;
+    let totalOvertime = 0;
+    let totalAdvanceAmount = 0;
+    let totalNet = 0;
+    
+    const rows = tableBody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const weeklySalary = parseCurrency(row.cells[7].textContent);
+        const overtimeSalary = parseCurrency(row.cells[10].textContent);
+        const advanceAmount = parseFloat(row.cells[11].querySelector('input').value) || 0;
+        const netSalary = parseCurrency(row.cells[13].textContent);
+        
+        totalWeekly += weeklySalary;
+        totalOvertime += overtimeSalary;
+        totalAdvanceAmount += advanceAmount;
+        totalNet += netSalary;
+    });
+    
+    updateSummary(totalWeekly, totalOvertime, totalAdvanceAmount, totalNet);
+}
         
         // Hàm cập nhật tổng kết
         function updateSummary(weekly, overtime, advance, net) {
@@ -761,46 +777,228 @@
             totalAdvance.textContent = formatCurrency(advance);
             totalNetSalary.textContent = formatCurrency(net);
         }
-        
-        // Hàm xuất Excel (đơn giản)
-        function exportToExcel() {
-            // Tạo nội dung CSV
-            let csvContent = "STT,Họ và tên,Năm sinh,Số CCCD,Chức vụ,Lương ngày,Ngày Công tuần,Lương ngày công tuần,Số giờ tăng ca,Lương tăng ca,Lương công tăng ca,Tạm ứng,Tổng lương,Lương Thực Lĩnh,Ký tên\n";
+
+        // Hàm lấy ngày đầu và cuối tuần
+        function getWeekDateRange(year, month, week) {
+            const firstDayOfMonth = new Date(year, month - 1, 1);
+            const firstDayOfWeek = new Date(firstDayOfMonth);
             
-            const rows = tableBody.querySelectorAll('tr');
-            rows.forEach((row, index) => {
-                const cells = row.cells;
-                const rowData = [
-                    index + 1,
-                    cells[1].textContent,
-                    cells[2].textContent,
-                    cells[3].textContent,
-                    cells[4].textContent,
-                    cells[5].textContent.replace(/[^\d.-]/g, ''),
-                    cells[6].textContent,
-                    cells[7].textContent.replace(/[^\d.-]/g, ''),
-                    cells[8].textContent,
-                    cells[9].textContent.replace(/[^\d.-]/g, ''),
-                    cells[10].textContent.replace(/[^\d.-]/g, ''),
-                    cells[11].querySelector('input').value,
-                    cells[12].textContent.replace(/[^\d.-]/g, ''),
-                    cells[13].textContent.replace(/[^\d.-]/g, ''),
-                    ""
-                ];
-                csvContent += rowData.join(',') + '\n';
-            });
+            // Tìm ngày đầu tuần (thứ 2)
+            let dayOfWeek = firstDayOfMonth.getDay();
+            let diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            firstDayOfWeek.setDate(firstDayOfMonth.getDate() + diffToMonday + (week - 1) * 7);
             
-            // Tạo file và tải xuống
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `bang_luong_${yearSelect.value}_${monthSelect.value}_tuan_${weekSelect.value}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Ngày cuối tuần (chủ nhật)
+            const lastDayOfWeek = new Date(firstDayOfWeek);
+            lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+            
+            return {
+                startDate: formatDateForExport(firstDayOfWeek),
+                endDate: formatDateForExport(lastDayOfWeek)
+            };
         }
+
+        // Hàm định dạng ngày cho xuất file
+        function formatDateForExport(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Hàm xuất Excel với SheetJS
+        function exportToExcel() {
+    const year = parseInt(yearSelect.value);
+    const month = parseInt(monthSelect.value);
+    const week = parseInt(weekSelect.value);
+    const teamName = teamSelect.options[teamSelect.selectedIndex].text;
+
+    if (!year || !month || !week || !teamName) {
+        alert("Vui lòng chọn đủ Năm, Tháng, Tuần, Đội trước khi xuất Excel!");
+        return;
+    }
+
+    const weekRange = getWeekDateRange(year, month, week);
+    const wb = XLSX.utils.book_new();
+
+    // --- CHUẨN BỊ DỮ LIỆU ---
+    const excelData = [];
+    excelData.push([]);
+    excelData.push([`TỔNG HỢP LƯƠNG - TUẦN ${week} THÁNG ${month} (${weekRange.startDate} đến ${weekRange.endDate})`]);
+    excelData.push([`Đội: ${teamName}`]);
+    excelData.push([]);
+
+    const headerRow1 = [
+        "STT", "Họ và tên", "Năm sinh", "Số CCCD", "Chức vụ", "Mức lương", "Ngày Công",
+        "Lương Hưởng", "", "", "Tạm ứng", "Tổng lương", "Lương Thực Lĩnh", "Ký tên"
+    ];
+    const headerRow2 = [
+        "", "", "", "", "", "", "",
+        "Lương ngày công", "Số giờ tăng ca", "Lương tăng ca", "", "", "", ""
+    ];
+    excelData.push(headerRow1);
+    excelData.push(headerRow2);
+
+    // --- HÀM CHUYỂN ĐỔI SỐ ---
+//    function parseNumber(value) {
+//        if (typeof value === "string") {
+//            const cleaned = value.replace(/[^\d.,]/g, "");
+//            const normalized = cleaned.replace(/\./g, "").replace(",", ".");
+//            return parseFloat(normalized) || 0;
+//        }
+//        return value || 0;
+//    }
+
+    // --- DỮ LIỆU NHÂN VIÊN ---
+    const rows = tableBody.querySelectorAll("tr");
+    rows.forEach((row, index) => {
+        const cells = row.cells;
+        const rowData = [
+            index + 1,
+            cells[1].textContent,
+            cells[2].textContent,
+            cells[3].textContent,
+            cells[4].textContent,
+
+            cells[5].textContent,
+            cells[6].textContent,
+            cells[7].textContent,
+            cells[8].textContent,
+            cells[9].textContent,
+            cells[11].querySelector("input").value,
+            cells[12].textContent,
+            cells[13].textContent,
+            ""
+        ];
+        excelData.push(rowData);
+    });
+
+    // --- TẠO SHEET ---
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+    // --- MERGE ---
+    ws["!merges"] = [
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 13 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 13 } },
+        { s: { r: 4, c: 0 }, e: { r: 5, c: 0 } },
+        { s: { r: 4, c: 1 }, e: { r: 5, c: 1 } },
+        { s: { r: 4, c: 2 }, e: { r: 5, c: 2 } },
+        { s: { r: 4, c: 3 }, e: { r: 5, c: 3 } },
+        { s: { r: 4, c: 4 }, e: { r: 5, c: 4 } },
+        { s: { r: 4, c: 5 }, e: { r: 5, c: 5 } },
+        { s: { r: 4, c: 6 }, e: { r: 5, c: 6 } },
+        { s: { r: 4, c: 7 }, e: { r: 4, c: 9 } },
+        { s: { r: 4, c: 10 }, e: { r: 5, c: 10 } },
+        { s: { r: 4, c: 11 }, e: { r: 5, c: 11 } },
+        { s: { r: 4, c: 12 }, e: { r: 5, c: 12 } },
+        { s: { r: 4, c: 13 }, e: { r: 5, c: 13 } }
+    ];
+
+    // --- STYLE (giống Code 2) ---
+    const borderStyle = {
+        top: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } }
+    };
+
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    const moneyCols = [5, 7, 9, 10, 11, 12];
+    const workCols = [6, 8];
+
+    for (let R = range.s.r; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+            const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+            const cellData = excelData[R] ? excelData[R][C] : "";
+            if (!ws[cellRef]) ws[cellRef] = { t: "s", v: cellData };
+
+            ws[cellRef].s = {
+                alignment: {
+                    horizontal: "center",
+                    vertical: "center",
+                    wrapText: true
+                },
+                border: borderStyle
+            };
+
+            // Tiêu đề chính
+            if (R === 1) {
+                ws[cellRef].s.font = { bold: true, sz: 16 };
+                ws[cellRef].s.alignment = { horizontal: "center", vertical: "center" };
+                ws[cellRef].s.border = undefined;
+            }
+
+            // Dòng "Đội"
+            if (R === 2) {
+                ws[cellRef].s.font = { italic: true };
+                ws[cellRef].s.border = undefined;
+            }
+
+            // Header (R4-R5)
+            if (R === 4 || R === 5) {
+                ws[cellRef].s.font = { bold: true };
+                ws[cellRef].s.fill = {
+                    patternType: "solid",
+                    fgColor: { rgb: "D9E1F2" } // xanh nhạt
+                };
+            }
+
+            // Dòng dữ liệu
+            if (R >= 6) {
+                const value = excelData[R][C];
+                if (typeof value === "number") ws[cellRef].t = "n";
+
+                if (moneyCols.includes(C)) {
+                    ws[cellRef].z = "#,##0";
+                    ws[cellRef].s.alignment.horizontal = "right";
+                } else if (workCols.includes(C)) {
+                    ws[cellRef].z = "0";
+                    ws[cellRef].s.alignment.horizontal = "center";
+                }
+            }
+        }
+    }
+
+    // --- CỘT & HÀNG ---
+    ws["!cols"] = [
+        { wch: 5 }, { wch: 20 }, { wch: 10 }, { wch: 15 },
+        { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
+        { wch: 18 }, { wch: 15 }
+    ];
+
+    ws["!rows"] = excelData.map(row => ({
+        hpt: 20 + (row.some(cell => (cell + "").includes("\n")) ? 10 : 0)
+    }));
+
+    // --- ĐỊNH DẠNG TRANG IN ---
+    ws["!pageSetup"] = {
+        paperSize: 9,      // A4
+        orientation: "landscape",
+        scale: 68,
+        fitToPage: false,
+        margins: {
+            left: 0.75,
+            right: 0.75,
+            top: 1.0,
+            bottom: 1.0,
+            header: 0.3,
+            footer: 0.3
+        }
+    };
+
+    // --- GHI FILE ---
+    XLSX.utils.book_append_sheet(wb, ws, "BangLuong");
+    const fileName = `TONG_HOP_LUONG_TUAN_${week}_THANG_${month}_${year}.xlsx`;
+    XLSX.writeFile(wb, fileName, { compression: true });
+}
+
+
+
+
+
+
+
         
         // Event Listeners
         loadDataBtn.addEventListener('click', loadData);
