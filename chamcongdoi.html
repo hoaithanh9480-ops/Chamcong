@@ -622,15 +622,32 @@
         
         // Hàm tính tổng số giờ công từ dữ liệu chấm công
         function calculateTotalHours(employeeId, data) {
-            if (!data[employeeId]) return 0;
-            
-            let totalHours = 0;
-            Object.values(data[employeeId]).forEach(hours => {
-                totalHours += parseFloat(hours) || 0;
-            });
-            
-            return totalHours;
-        }
+    if (!data[employeeId]) return 0;
+    
+    let totalHours = 0;
+    Object.values(data[employeeId]).forEach(hours => {
+        // Sử dụng parseFloat chính xác và cộng dồn
+        totalHours = preciseAdd(totalHours, parseFloat(hours) || 0);
+    });
+    
+    return totalHours;
+}
+
+// Hàm cộng số thập phân chính xác
+function preciseAdd(a, b) {
+    const precision = 100; // Độ chính xác 2 chữ số thập phân
+    return (Math.round(a * precision) + Math.round(b * precision)) / precision;
+}
+
+// Hàm chuyển đổi số thập phân chính xác
+function preciseNumber(value) {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+        // Xử lý chuỗi số thập phân
+        return parseFloat(value) || 0;
+    }
+    return 0;
+}
         
         // Hàm định dạng tiền tệ
         function formatCurrency(amount) {
@@ -652,65 +669,78 @@
         
         // Hàm tạo bảng lương
         function generateSalaryTable() {
-            tableBody.innerHTML = '';
-            
-            let totalWeekly = 0;
-            let totalOvertime = 0;
-            let totalAdvanceAmount = 0;
-            let totalNet = 0;
-            
-            employees.forEach((employee, index) => {
-                // Tính toán các giá trị
-                const workHours = calculateTotalHours(employee.id, attendanceData);
-                const overtimeHours = calculateTotalHours(employee.id, overtimeData);
-                const dailySalary = parseFloat(employee.dailySalary) || 0;
-                const overtimeRate = parseFloat(employee.overtimeSalary) || 0;
-                
-                const weeklySalary = workHours * dailySalary;
-                const overtimeSalary = overtimeHours * overtimeRate;
-                const advanceAmount = 0; // Có thể thêm tính năng nhập tạm ứng sau
-                const totalSalary = weeklySalary + overtimeSalary;
-                const netSalary = totalSalary - advanceAmount;
-                
-                // Cộng dồn vào tổng
-                totalWeekly += weeklySalary;
-                totalOvertime += overtimeSalary;
-                totalAdvanceAmount += advanceAmount;
-                totalNet += netSalary;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="stt-column">${index + 1}</td>
-                    <td class="employee-name">${employee.name}</td>
-                    <td>${formatDateForDisplay(employee.birthDate)}</td>
-                    <td>${employee.idNumber}</td>
-                    <td>${employee.position}</td>
-                    <td class="salary-column">${formatCurrency(dailySalary)}</td>
-                    <td class="salary-column">${workHours.toFixed(1)}</td>
-                    <td class="salary-column">${formatCurrency(weeklySalary)}</td>
-                    <td class="salary-column">${overtimeHours.toFixed(1)}</td>
-                    <td class="salary-column">${formatCurrency(overtimeRate)}</td>
-                    <td class="salary-column">${formatCurrency(overtimeSalary)}</td>
-                    <td class="salary-column">
-                        <input type="number" value="${advanceAmount}" min="0" 
-                               onchange="updateAdvance(${index}, this.value)" 
-                               style="width: 100px;">
-                    </td>
-                    <td class="total-column">${formatCurrency(totalSalary)}</td>
-                    <td class="total-column">${formatCurrency(netSalary)}</td>
-                    <td class="signature-column"></td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-            
-            // Cập nhật tổng kết
-            updateSummary(totalWeekly, totalOvertime, totalAdvanceAmount, totalNet);
-        }
+    tableBody.innerHTML = '';
+    
+    let totalWeekly = 0;
+    let totalOvertime = 0;
+    let totalAdvanceAmount = 0;
+    let totalNet = 0;
+    
+    employees.forEach((employee, index) => {
+        // Tính toán các giá trị với độ chính xác cao
+        const workHours = calculateTotalHours(employee.id, attendanceData);
+        const overtimeHours = calculateTotalHours(employee.id, overtimeData);
+        const dailySalary = preciseNumber(employee.dailySalary) || 0;
+        const overtimeRate = preciseNumber(employee.overtimeSalary) || 0;
+        
+        // Tính toán lương với độ chính xác
+        const weeklySalary = preciseMultiply(workHours, dailySalary);
+        const overtimeSalary = preciseMultiply(overtimeHours, overtimeRate);
+        const advanceAmount = 0; // Có thể thêm tính năng nhập tạm ứng sau
+        const totalSalary = preciseAdd(weeklySalary, overtimeSalary);
+        const netSalary = preciseSubtract(totalSalary, advanceAmount);
+        
+        // Cộng dồn vào tổng với độ chính xác
+        totalWeekly = preciseAdd(totalWeekly, weeklySalary);
+        totalOvertime = preciseAdd(totalOvertime, overtimeSalary);
+        totalAdvanceAmount = preciseAdd(totalAdvanceAmount, advanceAmount);
+        totalNet = preciseAdd(totalNet, netSalary);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="stt-column">${index + 1}</td>
+            <td class="employee-name">${employee.name}</td>
+            <td>${formatDateForDisplay(employee.birthDate)}</td>
+            <td>${employee.idNumber}</td>
+            <td>${employee.position}</td>
+            <td class="salary-column">${formatCurrency(dailySalary)}</td>
+            <td class="salary-column">${workHours.toFixed(2)}</td> <!-- Hiển thị 2 chữ số thập phân -->
+            <td class="salary-column">${formatCurrency(weeklySalary)}</td>
+            <td class="salary-column">${overtimeHours.toFixed(2)}</td> <!-- Hiển thị 2 chữ số thập phân -->
+            <td class="salary-column">${formatCurrency(overtimeRate)}</td>
+            <td class="salary-column">${formatCurrency(overtimeSalary)}</td>
+            <td class="salary-column">
+                <input type="number" value="${advanceAmount}" min="0" step="0.01"
+                       onchange="updateAdvance(${index}, this.value)" 
+                       style="width: 100px;">
+            </td>
+            <td class="total-column">${formatCurrency(totalSalary)}</td>
+            <td class="total-column">${formatCurrency(netSalary)}</td>
+            <td class="signature-column"></td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Cập nhật tổng kết
+    updateSummary(totalWeekly, totalOvertime, totalAdvanceAmount, totalNet);
+}
+
+// Hàm nhân số thập phân chính xác
+function preciseMultiply(a, b) {
+    const precision = 10000; // Độ chính xác cao cho phép nhân
+    return (Math.round(a * precision) * Math.round(b * precision)) / (precision * precision);
+}
+
+// Hàm trừ số thập phân chính xác
+function preciseSubtract(a, b) {
+    const precision = 100;
+    return (Math.round(a * precision) - Math.round(b * precision)) / precision;
+}
         
         // Hàm cập nhật tạm ứng
         function updateAdvance(index, value) {
-    const advanceAmount = parseFloat(value) || 0;
+    const advanceAmount = preciseNumber(value);
     const rows = tableBody.querySelectorAll('tr');
     const row = rows[index];
     
@@ -718,12 +748,12 @@
         const weeklySalaryText = row.cells[7].textContent;
         const overtimeSalaryText = row.cells[10].textContent;
         
-        // SỬA LẠI: Hàm chuyển đổi chuỗi tiền tệ sang số chính xác
+        // Sử dụng hàm parseCurrency chính xác
         const weeklySalary = parseCurrency(weeklySalaryText);
         const overtimeSalary = parseCurrency(overtimeSalaryText);
         
-        const totalSalary = weeklySalary + overtimeSalary;
-        const netSalary = totalSalary - advanceAmount;
+        const totalSalary = preciseAdd(weeklySalary, overtimeSalary);
+        const netSalary = preciseSubtract(totalSalary, advanceAmount);
         
         // Cập nhật các ô
         row.cells[12].textContent = formatCurrency(totalSalary);
@@ -758,13 +788,13 @@ function parseCurrency(currencyString) {
     rows.forEach(row => {
         const weeklySalary = parseCurrency(row.cells[7].textContent);
         const overtimeSalary = parseCurrency(row.cells[10].textContent);
-        const advanceAmount = parseFloat(row.cells[11].querySelector('input').value) || 0;
+        const advanceAmount = preciseNumber(row.cells[11].querySelector('input').value);
         const netSalary = parseCurrency(row.cells[13].textContent);
         
-        totalWeekly += weeklySalary;
-        totalOvertime += overtimeSalary;
-        totalAdvanceAmount += advanceAmount;
-        totalNet += netSalary;
+        totalWeekly = preciseAdd(totalWeekly, weeklySalary);
+        totalOvertime = preciseAdd(totalOvertime, overtimeSalary);
+        totalAdvanceAmount = preciseAdd(totalAdvanceAmount, advanceAmount);
+        totalNet = preciseAdd(totalNet, netSalary);
     });
     
     updateSummary(totalWeekly, totalOvertime, totalAdvanceAmount, totalNet);
