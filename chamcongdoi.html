@@ -1073,7 +1073,7 @@ function parseCurrency(currencyString) {
     ws["!rows"] = excelData.map((row, index) => {
         // Chỉ thiết lập chiều cao cố định cho các dòng trống chừa chỗ ký tên
         if (index === signatureGapRow1 || index === signatureGapRow2) {
-             return { hpt: 40 }; // Chừa chỗ ký
+             return { hpt: 15 }; // Chừa chỗ ký
         }
         // Trả về undefined cho TẤT CẢ các dòng khác để Excel tự điều chỉnh chiều cao
         return undefined; 
@@ -1110,4 +1110,5 @@ function parseCurrency(currencyString) {
     </script>
 </body>
 </html>
+
 
