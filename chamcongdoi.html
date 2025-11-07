@@ -853,11 +853,19 @@ function parseCurrency(currencyString) {
 
     // --- CHUẨN BỊ DỮ LIỆU ---
     const excelData = [];
-    excelData.push([]);
+    
+    // Hàng 1, 2, 3 (index 0, 1, 2)
+    excelData.push(["CÔNG TY TNHH TẬP ĐOÀN ĐT XD DV TM XNK TỔNG HỢP PHAN GIA GROUP", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    excelData.push(["Địa chỉ: 12/17/1D Đường số 6, Phường Bình Tân,TP Hồ Chí Minh.", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    excelData.push(["MST: 0318857357", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    excelData.push([]); // Dòng trống 4 (index 3)
+
+    // Hàng 5, 6, 7 (index 4, 5, 6)
     excelData.push([`TỔNG HỢP LƯƠNG - TUẦN ${week} THÁNG ${month} (${weekRange.startDate} đến ${weekRange.endDate})`]);
     excelData.push([`Đội: ${teamName}`]);
     excelData.push([]);
 
+    // Hàng Tiêu đề (Header) 8, 9 (index 7, 8)
     const headerRow1 = [
         "STT", "Họ và tên", "Năm sinh", "Số CCCD", "Chức vụ", "Mức lương", "Ngày Công",
         "Lương Hưởng", "", "", "Tạm ứng", "Tổng lương", "Lương Thực Lĩnh", "Ký tên"
@@ -868,69 +876,90 @@ function parseCurrency(currencyString) {
     ];
     excelData.push(headerRow1);
     excelData.push(headerRow2);
-
-    // --- HÀM CHUYỂN ĐỔI SỐ ---
-//    function parseNumber(value) {
-//        if (typeof value === "string") {
-//            const cleaned = value.replace(/[^\d.,]/g, "");
-//            const normalized = cleaned.replace(/\./g, "").replace(",", ".");
-//            return parseFloat(normalized) || 0;
-//        }
-//        return value || 0;
-//    }
-
+    const dataStartRow = excelData.length; // Bắt đầu dữ liệu nhân viên (index 9)
+    
     // --- DỮ LIỆU NHÂN VIÊN ---
     const rows = tableBody.querySelectorAll("tr");
     rows.forEach((row, index) => {
         const cells = row.cells;
+        // Chuyển đổi giá trị tiền tệ và số thành dạng số (Number)
+        const tamUngValue = parseFloat(cells[11].querySelector("input").value.replace(/\./g, '').replace(/,/g, '.')) || 0;
         const rowData = [
-            index + 1,
-            cells[1].textContent,
-            cells[2].textContent,
-            cells[3].textContent,
-            cells[4].textContent,
-
-            cells[5].textContent,
-            cells[6].textContent,
-            cells[7].textContent,
-            cells[8].textContent,
-            cells[9].textContent,
-            cells[11].querySelector("input").value,
-            cells[12].textContent,
-            cells[13].textContent,
-            ""
+            index + 1, cells[1].textContent, cells[2].textContent, cells[3].textContent, cells[4].textContent,
+            parseFloat(cells[5].textContent.replace(/\./g, '').replace(/,/g, '.')) || 0, 
+            parseFloat(cells[6].textContent) || 0, 
+            parseFloat(cells[7].textContent.replace(/\./g, '').replace(/,/g, '.')) || 0, 
+            parseFloat(cells[8].textContent) || 0, 
+            parseFloat(cells[9].textContent.replace(/\./g, '').replace(/,/g, '.')) || 0, 
+            tamUngValue, 
+            parseFloat(cells[12].textContent.replace(/\./g, '').replace(/,/g, '.')) || 0, 
+            parseFloat(cells[13].textContent.replace(/\./g, '').replace(/,/g, '.')) || 0, ""
         ];
         excelData.push(rowData);
     });
+    const dataEndRow = excelData.length - 1; 
 
-    // --- TẠO SHEET ---
+    // --- THÊM DÒNG TỔNG CỘNG ---
+    const totalRow = ["TỔNG CỘNG", "", "", "", "", "", "", "", "", "", "", "", "", ""];
+    excelData.push(totalRow);
+    const totalRowIndex = excelData.length - 1; 
+
+    // --- KHU VỰC KÝ TÊN ---
+    const signatureGapRow1 = excelData.length; // Dòng trống 1
+    excelData.push([]); 
+    const signatureGapRow2 = excelData.length; // Dòng trống 2
+    excelData.push([]); 
+    
+    const signatureDateRow = excelData.length; // Dòng Ngày/Tháng/Năm
+    const dateText = `Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`;
+    excelData.push(["", "", "", "", "", "", "", "", "", "", "", dateText, "", ""]);
+    
+    const titleRowIndex = excelData.length; // Dòng Chức danh
+    excelData.push(["", "", "Giám đốc", "", "", "", "", "", "", "", "", "Người lập", "", ""]);
+
+
+    // --- TẠO SHEET & MERGE ---
     const ws = XLSX.utils.aoa_to_sheet(excelData);
 
-    // --- MERGE ---
     ws["!merges"] = [
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 13 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 13 } },
-        { s: { r: 4, c: 0 }, e: { r: 5, c: 0 } },
-        { s: { r: 4, c: 1 }, e: { r: 5, c: 1 } },
-        { s: { r: 4, c: 2 }, e: { r: 5, c: 2 } },
-        { s: { r: 4, c: 3 }, e: { r: 5, c: 3 } },
-        { s: { r: 4, c: 4 }, e: { r: 5, c: 4 } },
-        { s: { r: 4, c: 5 }, e: { r: 5, c: 5 } },
-        { s: { r: 4, c: 6 }, e: { r: 5, c: 6 } },
-        { s: { r: 4, c: 7 }, e: { r: 4, c: 9 } },
-        { s: { r: 4, c: 10 }, e: { r: 5, c: 10 } },
-        { s: { r: 4, c: 11 }, e: { r: 5, c: 11 } },
-        { s: { r: 4, c: 12 }, e: { r: 5, c: 12 } },
-        { s: { r: 4, c: 13 }, e: { r: 5, c: 13 } }
+        // ... (Giữ nguyên các merge cũ và thêm merge khu vực ký tên) ...
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }, { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }, 
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 13 } }, { s: { r: 5, c: 0 }, e: { r: 5, c: 13 } }, 
+        { s: { r: 7, c: 0 }, e: { r: 8, c: 0 } }, { s: { r: 7, c: 1 }, e: { r: 8, c: 1 } }, { s: { r: 7, c: 2 }, e: { r: 8, c: 2 } }, 
+        { s: { r: 7, c: 3 }, e: { r: 8, c: 3 } }, { s: { r: 7, c: 4 }, e: { r: 8, c: 4 } }, { s: { r: 7, c: 5 }, e: { r: 8, c: 5 } }, 
+        { s: { r: 7, c: 6 }, e: { r: 8, c: 6 } }, { s: { r: 7, c: 7 }, e: { r: 7, c: 9 } }, { s: { r: 7, c: 10 }, e: { r: 8, c: 10 } }, 
+        { s: { r: 7, c: 11 }, e: { r: 8, c: 11 } }, { s: { r: 7, c: 12 }, e: { r: 8, c: 12 } }, { s: { r: 7, c: 13 }, e: { r: 8, c: 13 } }, 
+        
+        { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 5 } }, 
+        
+        // Merge khu vực Ký tên
+        { s: { r: signatureDateRow, c: 11 }, e: { r: signatureDateRow, c: 13 } }, // Ngày/Tháng/Năm Người lập (L:N)
+        { s: { r: titleRowIndex, c: 2 }, e: { r: titleRowIndex, c: 5 } }, // Giám đốc C:F
+        { s: { r: titleRowIndex, c: 11 }, e: { r: titleRowIndex, c: 13 } } // Người lập L:N
     ];
 
-    // --- STYLE (giống Code 2) ---
+    // --- THÊM CÔNG THỨC TÍNH TỔNG ---
+    const totalExcelRow = totalRowIndex + 1; 
+    const dataExcelStart = dataStartRow + 1; 
+    const dataExcelEnd = dataEndRow + 1; 
+    const sumCols = [6, 7, 8, 9, 10, 11, 12]; 
+
+    sumCols.forEach(colIndex => {
+        const colRef = XLSX.utils.encode_col(colIndex); 
+        const cellRef = `${colRef}${totalExcelRow}`; 
+        const formula = `SUM(${colRef}${dataExcelStart}:${colRef}${dataExcelEnd})`;
+        ws[cellRef] = { t: "n", f: formula }; 
+    });
+
+    // --- STYLE ĐIỀU CHỈNH ---
     const borderStyle = {
-        top: { style: "thin", color: { rgb: "000000" } },
-        left: { style: "thin", color: { rgb: "000000" } },
-        bottom: { style: "thin", color: { rgb: "000000" } },
-        right: { style: "thin", color: { rgb: "000000" } }
+        top: { style: "thin", color: { rgb: "000000" } }, left: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } }, right: { style: "thin", color: { rgb: "000000" } }
     };
+    const totalFillStyle = { patternType: "solid", fgColor: { rgb: "FFE699" } }; // Vàng nhẹ
+    const headerFillStyle = { patternType: "solid", fgColor: { rgb: "D9E1F2" } }; // Xanh xám nhẹ
+    const titleFont = { sz: 10, bold: true, italic: false };
+    const dateFont = { sz: 10, bold: false, italic: false }; // Không cần đậm
 
     const range = XLSX.utils.decode_range(ws["!ref"]);
     const moneyCols = [5, 7, 9, 10, 11, 12];
@@ -942,54 +971,97 @@ function parseCurrency(currencyString) {
             const cellData = excelData[R] ? excelData[R][C] : "";
             if (!ws[cellRef]) ws[cellRef] = { t: "s", v: cellData };
 
+            const hasBorder = R >= 7 && R <= totalRowIndex; 
+            const isTotalRow = R === totalRowIndex;
+            const isHeaderRow = R === 7 || R === 8;
+            const isCompanyInfoRow = R === 0 || R === 1 || R === 2;
+            const isDateRow = R === signatureDateRow;
+            const isTitleRow = R === titleRowIndex;
+            
+            // Apply default style
             ws[cellRef].s = {
-                alignment: {
-                    horizontal: "center",
-                    vertical: "center",
-                    wrapText: true
-                },
-                border: borderStyle
+                alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                border: hasBorder ? borderStyle : undefined
             };
 
+            // 1. Dòng 1, 2, 3: Canh trái, Đậm, Auto-height
+            if (isCompanyInfoRow) {
+                if (C <= 8) { // Chỉ áp dụng style cho khu vực merge
+                    ws[cellRef].s = {
+                        font: { sz: 9, bold: true },
+                        alignment: { horizontal: "left", vertical: "center", wrapText: true },
+                        border: undefined
+                    };
+                }
+            } 
+            // 2. Hàng Tiêu đề (Header): In đậm và tô màu
+            else if (isHeaderRow) { 
+                ws[cellRef].s.font = { bold: true };                ws[cellRef].s.fill = headerFillStyle; // Màu xanh xám nhẹ
+            }
             // Tiêu đề chính
-            if (R === 1) {
+            else if (R === 4) { 
                 ws[cellRef].s.font = { bold: true, sz: 16 };
-                ws[cellRef].s.alignment = { horizontal: "center", vertical: "center" };
+                ws[cellRef].s.alignment.horizontal = "center";
+                ws[cellRef].s.border = undefined;
+            } else if (R === 5) { 
+                ws[cellRef].s.font = { italic: true, sz: 12 };
+                ws[cellRef].s.border = undefined;
+            } else if (R === 3 || R === 6 || R === signatureGapRow1 || R === signatureGapRow2) { // Các dòng trống
                 ws[cellRef].s.border = undefined;
             }
+            
+            // Dòng Tổng Cộng
+            if (isTotalRow) {
+                ws[cellRef].s.font = { bold: true, sz: 11 };
+                ws[cellRef].s.fill = totalFillStyle;
+                ws[cellRef].s.border = borderStyle;
+                if ([7, 9, 10, 11, 12].includes(C)) { // H, J, K, L, M (index 7,9,10,11,12)
+                    ws[cellRef].z = "#,##0"; // Định dạng số có dấu phẩy
+                    ws[cellRef].t = "n";
+                    ws[cellRef].s.alignment.horizontal = "right";
+                }
+            } 
+            
+            // 3. Khu vực Ký tên: Ngày/Tháng/Năm & Chức danh CANH GIỮA
+            if (isDateRow || isTitleRow) {
+                ws[cellRef].s.border = undefined; 
 
-            // Dòng "Đội"
-            if (R === 2) {
-                ws[cellRef].s.font = { italic: true };
-                ws[cellRef].s.border = undefined;
+                if (isDateRow && (C >= 11 && C <= 13)) { // Ngày/Tháng/Năm Người lập (L:N)
+                    ws[cellRef].s.font = dateFont;
+                    ws[cellRef].s.alignment = { horizontal: "center", vertical: "center" }; 
+                }
+                
+                if (isTitleRow) { 
+                    if (C >= 2 && C <= 5 || C >= 11 && C <= 13) { // Chức danh
+                         ws[cellRef].s.font = titleFont;
+                         ws[cellRef].s.alignment = { horizontal: "center", vertical: "center" };
+                    }
+                }
             }
-
-            // Header (R4-R5)
-            if (R === 4 || R === 5) {
-                ws[cellRef].s.font = { bold: true };
-                ws[cellRef].s.fill = {
-                    patternType: "solid",
-                    fgColor: { rgb: "D9E1F2" } // xanh nhạt
-                };
-            }
-
-            // Dòng dữ liệu
-            if (R >= 6) {
-                const value = excelData[R][C];
-                if (typeof value === "number") ws[cellRef].t = "n";
+            // Dòng dữ liệu (Căn chỉnh số/tiền tệ)
+            else if (R >= dataStartRow && R < totalRowIndex) { 
+                 const value = excelData[R][C];
+                if (typeof value === "number" || C === 5 || C === 7 || C === 9 || C === 10 || C === 11 || C === 12) {
+                     ws[cellRef].t = "n"; 
+                } else {
+                     ws[cellRef].t = "s"; 
+                }
 
                 if (moneyCols.includes(C)) {
                     ws[cellRef].z = "#,##0";
                     ws[cellRef].s.alignment.horizontal = "right";
                 } else if (workCols.includes(C)) {
-                    ws[cellRef].z = "0";
+                    ws[cellRef].z = "0.0";
                     ws[cellRef].s.alignment.horizontal = "center";
+                }
+                if (C === 1) {
+                    ws[cellRef].s.alignment.horizontal = "left";
                 }
             }
         }
     }
 
-    // --- CỘT & HÀNG ---
+    // --- CỘT & HÀNG ĐIỀU CHỈNH ---
     ws["!cols"] = [
         { wch: 5 }, { wch: 20 }, { wch: 10 }, { wch: 15 },
         { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 15 },
@@ -997,23 +1069,25 @@ function parseCurrency(currencyString) {
         { wch: 18 }, { wch: 15 }
     ];
 
-    ws["!rows"] = excelData.map(row => ({
-        hpt: 20 + (row.some(cell => (cell + "").includes("\n")) ? 10 : 0)
-    }));
+    // *** KÍCH HOẠT AUTO-HEIGHT TOÀN BỘ (Bỏ hpt) ***
+    ws["!rows"] = excelData.map((row, index) => {
+        // Chỉ thiết lập chiều cao cố định cho các dòng trống chừa chỗ ký tên
+        if (index === signatureGapRow1 || index === signatureGapRow2) {
+             return { hpt: 40 }; // Chừa chỗ ký
+        }
+        // Trả về undefined cho TẤT CẢ các dòng khác để Excel tự điều chỉnh chiều cao
+        return undefined; 
+    });
 
-    // --- ĐỊNH DẠNG TRANG IN ---
+    // --- ĐỊNH DẠNG TRANG IN (Giữ nguyên) ---
     ws["!pageSetup"] = {
-        paperSize: 9,      // A4
+        paperSize: 9, 
         orientation: "landscape",
         scale: 68,
         fitToPage: false,
         margins: {
-            left: 0.75,
-            right: 0.75,
-            top: 1.0,
-            bottom: 1.0,
-            header: 0.3,
-            footer: 0.3
+            left: 0.75, right: 0.75, top: 1.0, bottom: 1.0,
+            header: 0.3, footer: 0.3
         }
     };
 
@@ -1036,3 +1110,4 @@ function parseCurrency(currencyString) {
     </script>
 </body>
 </html>
+
