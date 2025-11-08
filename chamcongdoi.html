@@ -1051,7 +1051,7 @@ function parseCurrency(currencyString) {
                     ws[cellRef].z = "#,##0";
                     ws[cellRef].s.alignment.horizontal = "right";
                 } else if (workCols.includes(C)) {
-                    ws[cellRef].z = "0.0";
+                    ws[cellRef].z = "0.00";
                     ws[cellRef].s.alignment.horizontal = "center";
                 }
                 if (C === 1) {
@@ -1110,5 +1110,6 @@ function parseCurrency(currencyString) {
     </script>
 </body>
 </html>
+
 
 
